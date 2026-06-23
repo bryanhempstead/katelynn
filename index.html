@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Katelynn">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FDB7C2">
+<link rel="manifest" href="manifest.json?v=15">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<title>Katelynn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500;1,600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=33">
+</head>
+<body>
+<div class="phone">
+
+  <!-- launch splash (fades out once loaded) -->
+  <div class="splash" id="splash">
+    <div class="splash-badge">
+      <img class="burst" src="assets/burst.png" alt="">
+      <img class="word" src="assets/katelynn-word-large2.png?v=11" alt="Katelynn">
+    </div>
+  </div>
+
+  <!-- purple valley wave behind everything -->
+  <svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <path d="M0,58 Q50,76 100,58 V100 H0 Z"></path>
+  </svg>
+
+  <!-- ===================== HOME ===================== -->
+  <section class="screen" id="home">
+    <div class="badge">
+      <img class="burst" src="assets/burst.png" alt="">
+      <img class="word" src="assets/katelynn-word-large2.png?v=11" alt="Katelynn">
+    </div>
+
+    <div class="quote">
+      <div class="q" id="quoteText">you are exactly where you need to be.</div>
+      <button class="tap" id="quoteNext">new quote ✦</button>
+    </div>
+
+    <div class="frames" id="frames">
+      <div class="frame help" data-go="panic" data-tile="help">
+        <div class="peek">
+          <span class="help-big">help now</span>
+          <span class="help-sub">tap — i’ll breathe with you ✦</span>
+        </div>
+        <div class="label">help now</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="schedule" data-tile="schedule">
+        <div class="peek" id="peekSchedule">tap to open</div>
+        <div class="label">schedule</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="todo" data-tile="todo">
+        <div class="peek" id="peekTodo">tap to open</div>
+        <div class="label">to.do</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="journal" data-tile="journal">
+        <div class="peek">
+          <svg viewBox="0 0 56 56" width="62" height="62" fill="none" aria-hidden="true">
+            <rect x="14" y="9" width="27" height="38" rx="4" stroke="#7A0E9B" stroke-width="2.6"/>
+            <path d="M14 9v38" stroke="#7A0E9B" stroke-width="2.6"/>
+            <path d="M20 9v38" stroke="#7A0E9B" stroke-width="1.5" opacity=".45"/>
+            <path d="M25 21h11M25 28h11M25 35h7" stroke="#7A0E9B" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>
+            <path d="M44 11l1.2 3.1 3.1 1.2-3.1 1.2L44 21l-1.2-3.1-3.1-1.2 3.1-1.2z" fill="#46A82E"/>
+            <path d="M10.5 38l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z" fill="#C42BFF"/>
+            <path d="M47 42l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="#C42BFF"/>
+          </svg>
+        </div>
+        <div class="label">journal</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="breathe" data-tile="breathe">
+        <div class="peek" id="peekBreathe">
+          <svg viewBox="0 0 56 56" width="60" height="60" fill="none" aria-hidden="true">
+            <g stroke="#7A0E9B" stroke-width="2.3" stroke-linejoin="round">
+              <path d="M28 13c4 9 4 18 0 26-4-8-4-17 0-26Z"/>
+              <path d="M28 39c-6-6-10-12-10-20 6 2 9 8 10 20Z"/>
+              <path d="M28 39c6-6 10-12 10-20-6 2-9 8-10 20Z"/>
+              <path d="M28 40c-8-2-15-6-18-13 7-1 14 3 18 13Z"/>
+              <path d="M28 40c8-2 15-6 18-13-7-1-14 3-18 13Z"/>
+            </g>
+            <path d="M15 45h26" stroke="#7A0E9B" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+            <path d="M45 13l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#46A82E"/>
+            <path d="M11 17l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#C42BFF"/>
+          </svg>
+        </div>
+        <div class="label">breathe</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="music" data-tile="music">
+        <div class="peek">
+          <svg viewBox="0 0 56 56" width="58" height="58" fill="none" aria-hidden="true"
+               stroke="#7A0E9B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 34v-6a15 15 0 0 1 30 0v6"/>
+            <path d="M9 35a4 4 0 0 1 4-4h2v15h-2a4 4 0 0 1-4-4z"/>
+            <path d="M47 35a4 4 0 0 0-4-4h-2v15h2a4 4 0 0 0 4-4z"/>
+          </svg>
+        </div>
+        <div class="label">music</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="reading" data-tile="reading">
+        <div class="peek" id="peekReading">
+          <svg viewBox="0 0 56 56" width="58" height="58" fill="none" aria-hidden="true">
+            <g stroke="#7A0E9B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M28 17c-4-2.6-10-3-15-1.5v26c5-1.5 11-1.2 15 1.4 4-2.6 11-2.9 15-1.4v-26c-5-1.5-11-1.1-15 1.5z"/>
+              <path d="M28 17v25.3"/>
+            </g>
+            <path d="M45 13l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#46A82E"/>
+            <path d="M11 16l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#C42BFF"/>
+          </svg>
+        </div>
+        <div class="label">reading</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+      <div class="frame" data-go="files" data-tile="files">
+        <div class="peek" id="peekFiles">
+          <svg viewBox="0 0 56 56" width="58" height="58" fill="none" aria-hidden="true">
+            <g stroke="#7A0E9B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18a3 3 0 0 1 3-3h9l4 5h16a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3z"/>
+              <path d="M16 25h24"/>
+            </g>
+            <path d="M44 12l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#46A82E"/>
+          </svg>
+        </div>
+        <div class="label">important files</div>
+        <button class="tile-size" aria-label="resize">⤢</button>
+      </div>
+    </div>
+
+    <div class="app-ver" id="appVer"></div>
+    <div class="home-spacer"></div>
+  </section>
+
+  <!-- ===================== SCHEDULE ===================== -->
+  <section class="screen" id="schedule">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">schedule</div>
+    </div>
+    <div class="sched-actions">
+      <button class="pill primary" id="schedUpload">📷 upload schedule</button>
+      <button class="pill ghost" id="schedAdd">＋ add manually</button>
+    </div>
+    <div id="schedList"></div>
+    <input type="file" id="schedFile" accept="image/*" hidden>
+  </section>
+
+  <!-- ===================== TO-DO ===================== -->
+  <section class="screen" id="todo">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">to.do</div>
+    </div>
+
+    <div class="todo-cats">
+      <button class="tcat on" data-cat="tasks">tasks</button>
+      <button class="tcat" data-cat="groceries">groceries</button>
+      <button class="tcat" data-cat="household">household</button>
+    </div>
+
+    <!-- tasks -->
+    <div class="todo-cat-panel on" id="catTasks">
+      <div class="todo-list" id="todoList"></div>
+      <div class="todo-add-row">
+        <input class="todo-add" id="todoAdd" type="text" placeholder="＋ add a task…">
+      </div>
+      <div class="hint">tap a star to finish it · long-press a task to clear it</div>
+    </div>
+
+    <!-- groceries -->
+    <div class="todo-cat-panel" id="catGroceries">
+      <div class="cl-list"></div>
+      <div class="todo-add-row">
+        <select class="cl-sub-select" id="grocSub"></select>
+        <input class="todo-add" id="grocAdd" type="text" placeholder="＋ add grocery…">
+      </div>
+      <div class="hint">pick an aisle, then add · tap the star when you’ve got it</div>
+    </div>
+
+    <!-- household -->
+    <div class="todo-cat-panel" id="catHousehold">
+      <div class="cl-list"></div>
+      <div class="todo-add-row">
+        <select class="cl-sub-select" id="houseSub"></select>
+        <input class="todo-add" id="houseAdd" type="text" placeholder="＋ add supply…">
+      </div>
+      <div class="hint">toilet paper, soap, batteries… · tap the star when stocked</div>
+    </div>
+  </section>
+
+  <!-- ===================== JOURNAL ===================== -->
+  <section class="screen" id="journal">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">journal</div>
+    </div>
+
+    <div class="lock-pad" id="lockPad">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-dots">
+        <span class="lock-dot"></span><span class="lock-dot"></span><span class="lock-dot"></span>
+      </div>
+      <div class="keypad" id="keypad">
+        <button class="key">1</button><button class="key">2</button><button class="key">3</button>
+        <button class="key">4</button><button class="key">5</button><button class="key">6</button>
+        <button class="key">7</button><button class="key">8</button><button class="key">9</button>
+        <button class="key blank"></button><button class="key">0</button>
+        <button class="key" data-act="del">⌫</button>
+      </div>
+      <div class="lock-note" id="lockNote">enter your 3-digit code</div>
+      <button class="btn-link" id="changeCode">change code</button>
+    </div>
+
+    <div class="journal-body" id="journalBody">
+      <textarea class="j-new" id="jNew" placeholder="what's on your mind today…"></textarea>
+      <button class="btn-save" id="jSave" style="margin:10px 0 18px">save entry</button>
+      <div id="jList"></div>
+      <button class="btn-link" id="jLock" style="display:block;margin:18px auto">lock journal</button>
+    </div>
+  </section>
+
+  <!-- ===================== BREATHE ===================== -->
+  <section class="screen" id="breathe">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">breathe</div>
+    </div>
+
+    <div class="panic-msg" id="panicMsg"></div>
+
+    <div class="breathe-intro">
+      <div class="bi-llama" id="biLlama"></div>
+      <div class="bi-txt" id="biTxt">hey — let's slow down together for a minute. pick one below. ✦</div>
+    </div>
+
+    <div class="br-tabs">
+      <button class="br-tab on" data-br="breath">breathing</button>
+      <button class="br-tab" data-br="ground">grounding</button>
+      <button class="br-tab" data-br="res">soothe kit</button>
+    </div>
+
+    <!-- breathing -->
+    <div class="br-panel on" id="brBreath">
+      <div class="breath-stage">
+        <div class="breath-orb" id="breathOrb">
+          <img class="bshape" src="assets/blob-purple.png" alt="">
+          <img class="bshape" src="assets/blob-blue.png" alt="">
+          <img class="bshape bg-green" src="assets/blob-green.png" alt="">
+          <div class="breath-cue" id="breathCue">ready?</div>
+        </div>
+      </div>
+      <div class="breath-count" id="breathCount"></div>
+      <div class="breath-meta" id="breathMeta">box breathing · in 4 · hold 4 · out 4 · hold 4</div>
+      <div class="breath-controls" id="breathPatterns">
+        <button class="br-pill ghost" data-pattern="box">box 4·4·4·4 · ~2 min</button>
+        <button class="br-pill ghost" data-pattern="478">calm 4·7·8 · ~2 min</button>
+        <button class="br-pill ghost" data-pattern="simple">simple 4·6 · ~90s</button>
+      </div>
+      <div class="breath-controls">
+        <button class="br-pill go" id="breathStart">start</button>
+      </div>
+      <button class="voice-row" id="voicePick">
+        <span class="vr-lbl">🎙 voice</span>
+        <span class="vr-cur" id="voiceCur">default</span>
+        <span class="vr-caret">▾</span>
+      </button>
+    </div>
+
+    <button class="breath-voice" id="breathVoiceBtn" title="voice guide">🔊</button>
+    <button class="breath-exit" id="breathExit">✕ exit</button>
+
+    <!-- grounding 5-4-3-2-1 -->
+    <div class="br-panel" id="brGround">
+      <div class="ground-step" id="groundStep"></div>
+      <div class="ground-dots" id="groundDots"></div>
+      <div class="breath-controls"><button class="br-pill go" id="groundNext">next</button></div>
+    </div>
+
+    <!-- soothe resources -->
+    <div class="br-panel" id="brRes">
+      <div class="res-item"><span class="ri-emoji">🌊</span><div><div class="ri-title">name the wave</div><div class="ri-body">feelings rise and fall like waves. you don't have to fix it — just notice it and let it pass through.</div></div></div>
+      <div class="res-item"><span class="ri-emoji">🧊</span><div><div class="ri-title">cold reset</div><div class="ri-body">hold something cold, or splash cool water on your face. it gently tells your nervous system you're safe.</div></div></div>
+      <div class="res-item"><span class="ri-emoji">🦶</span><div><div class="ri-title">feel your feet</div><div class="ri-body">press both feet into the floor. wiggle your toes. you are here, right now, and that's enough.</div></div></div>
+      <div class="res-item"><span class="ri-emoji">🤍</span><div><div class="ri-title">hand on heart</div><div class="ri-body">place a hand on your chest and take three slow breaths. say: "i'm doing my best, and that's okay."</div></div></div>
+      <div class="res-item"><span class="ri-emoji">📞</span><div><div class="ri-title">reach out</div><div class="ri-body">if it feels heavy, text a friend or call/text 988 (US crisis & support line). you never have to carry it alone.</div></div></div>
+    </div>
+
+    <!-- little pixel llama strolling along to the breath tempo -->
+    <div class="breathe-llama" id="breatheLlama">
+      <div class="ll-bob">
+        <div class="ll-frame f1" id="llamaF1"></div>
+        <div class="ll-frame f2" id="llamaF2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MUSIC ===================== -->
+  <section class="screen" id="music">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">music</div>
+    </div>
+
+    <div class="music-card">
+      <div class="mc-head">
+        <span class="mc-logo am">♪</span>
+        <span class="mc-title">Apple Music</span>
+        <span class="mc-status" id="amStatus">not connected</span>
+      </div>
+      <button class="mc-connect am" id="amConnect">Open Apple Music</button>
+      <div class="mc-link-row">
+        <input id="amLink" placeholder="paste an Apple Music album / playlist link">
+        <button id="amLoad">▶</button>
+      </div>
+      <div class="mc-embed" id="amEmbed"></div>
+    </div>
+
+    <div class="music-card">
+      <div class="mc-head">
+        <span class="mc-logo sp">♫</span>
+        <span class="mc-title">Spotify</span>
+        <span class="mc-status" id="spStatus">not connected</span>
+      </div>
+      <button class="mc-connect sp" id="spConnect">Connect Spotify</button>
+      <div class="mc-link-row">
+        <input id="spLink" placeholder="paste a Spotify playlist / track link">
+        <button id="spLoad">▶</button>
+      </div>
+      <div class="mc-embed" id="spEmbed"></div>
+    </div>
+
+    <div class="music-card">
+      <div class="mc-head">
+        <span class="mc-logo yt">▶</span>
+        <span class="mc-title">YouTube</span>
+      </div>
+      <div class="mc-link-row">
+        <input id="ytLink" placeholder="paste a YouTube link or search…">
+        <button id="ytLoad">▶</button>
+      </div>
+      <div class="mc-embed" id="ytEmbed"></div>
+      <div class="mc-note">paste any video / playlist link, or type words to search YouTube</div>
+    </div>
+  </section>
+
+  <!-- ===================== READING ===================== -->
+  <section class="screen" id="reading">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">reading</div>
+    </div>
+
+    <button class="gr-bar" id="grBar">
+      <span class="gr-logo">g</span>
+      <span class="gr-txt" id="grTxt">connect Goodreads</span>
+      <span class="gr-go">›</span>
+    </button>
+
+    <div class="rd-search">
+      <input id="rdSearch" type="text" placeholder="search a book title or author…" autocomplete="off">
+      <div class="rd-results" id="rdResults"></div>
+    </div>
+
+    <div class="rd-section" id="rdReadingNow" hidden>
+      <div class="rd-h">currently reading</div>
+      <div class="rd-shelf" id="rdShelfReading"></div>
+    </div>
+
+    <div class="rd-section">
+      <div class="rd-h">want to read <span class="rd-count" id="rdWantCount"></span></div>
+      <div class="rd-shelf" id="rdShelfWant"></div>
+    </div>
+
+    <div class="rd-section" id="rdFinishedSec" hidden>
+      <div class="rd-h">finished ✦</div>
+      <div class="rd-shelf" id="rdShelfDone"></div>
+    </div>
+
+    <div class="rd-section" id="rdRecSec" hidden>
+      <div class="rd-h">you might like</div>
+      <div class="rd-shelf" id="rdShelfRec"></div>
+    </div>
+  </section>
+
+  <!-- ===================== IMPORTANT FILES ===================== -->
+  <section class="screen" id="files">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">important files</div>
+    </div>
+
+    <!-- folders / home view -->
+    <div class="fi-view on" id="fiHome">
+      <button class="fi-scan" id="fiScanBtn">
+        <span class="fi-cam">⌖</span>
+        <span><b>scan a document</b><small>snap a photo → tidy PDF, auto-filed</small></span>
+      </button>
+      <div class="fi-folders" id="fiFolders"></div>
+    </div>
+
+    <!-- inside a folder -->
+    <div class="fi-view" id="fiFolder">
+      <button class="fi-crumb" id="fiBack">‹ all folders</button>
+      <div class="fi-folder-title" id="fiFolderTitle"></div>
+      <div class="fi-docs" id="fiDocs"></div>
+    </div>
+
+    <!-- capture / scan flow -->
+    <div class="fi-view" id="fiScan">
+      <div class="fi-scan-hint" id="fiScanHint">add each page of the document, then save. ✦</div>
+      <div class="fi-pages" id="fiPages"></div>
+      <div class="fi-scan-actions">
+        <button class="br-pill ghost" id="fiAddPage">＋ add page</button>
+        <button class="br-pill go" id="fiSave">save document</button>
+        <button class="br-pill ghost" id="fiCancel">cancel</button>
+      </div>
+    </div>
+    <input type="file" id="fiFile" accept="image/*" capture="environment" hidden>
+  </section>
+
+  <!-- ===================== CHATBOT ORB ===================== -->
+  <div class="orb" id="orb" title="ask Kit">
+    <img class="blob b1" src="assets/blob-purple.png" alt="">
+    <img class="blob b2" src="assets/blob-blue.png" alt="">
+    <img class="blob b3" src="assets/blob-green.png" alt="">
+    <div class="orb-label"><span>✦</span></div>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="chat-head">
+      <div class="mini-orb">
+        <img src="assets/blob-purple.png" alt=""><img src="assets/blob-blue.png" alt=""><img src="assets/blob-green.png" alt="">
+      </div>
+      <div class="ttl">Kit</div>
+      <button class="x" id="chatSettings" title="settings" style="font-size:19px">⚙</button>
+      <button class="x" id="chatClose">×</button>
+    </div>
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chip-row" id="chatChips">
+      <button class="chip">add a task</button>
+      <button class="chip">what's on today?</button>
+      <button class="chip">new journal entry</button>
+    </div>
+    <div class="chat-input">
+      <input id="chatInput" type="text" placeholder="ask me anything…">
+      <button id="chatSend">↑</button>
+    </div>
+  </div>
+
+  <!-- ===================== EDIT MODE ===================== -->
+  <button class="edit-done" id="editDone">done</button>
+  <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+  <input type="file" id="epubFile" accept=".epub,application/epub+zip" hidden>
+  <input type="file" id="audioFile" accept="audio/*,.m4b,.mp3,.m4a" hidden>
+
+  <!-- ===================== GENERIC SHEET ===================== -->
+  <div class="sheet-scrim" id="scrim"></div>
+  <div class="sheet" id="sheet">
+    <div class="grip"></div>
+    <div id="sheetBody"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="js/app.js?v=33"></script>
+</body>
+</html>

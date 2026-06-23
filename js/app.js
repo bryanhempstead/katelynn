@@ -1,0 +1,1680 @@
+/* ============================================================
+   Katelynn — app logic
+   Local-first: everything persists in localStorage.
+   AI (chat + schedule OCR) is STUBBED for now — see callKit() /
+   parseScheduleImage(). Swap those two functions for real Claude
+   calls when we wire the backend.
+   ============================================================ */
+'use strict';
+
+/* ---------- tiny storage helpers ---------- */
+const DB = {
+  get(k, def){ try{ const v=localStorage.getItem('kate.'+k); return v?JSON.parse(v):def; }catch(_){ return def; } },
+  set(k, v){ try{ localStorage.setItem('kate.'+k, JSON.stringify(v)); }catch(_){ } },
+};
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const now = ()=>Date.now();
+const uid = ()=>Math.random().toString(36).slice(2,9);
+
+/* ---------- toast ---------- */
+let toastT=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900);
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function go(id){
+  const home=$('#home'), phone=$('.phone');
+  if(id==='panic'){ enterPanic(); return; }   // "help now" tile → straight into a guided breath
+  if(id!=='breathe'){ if(typeof stopBreath==='function') stopBreath(); phone.classList.remove('panic'); }
+  if(id==='home'){
+    $$('.screen').forEach(s=>{ if(s.id!=='home') s.classList.remove('active'); });
+    home.classList.remove('pushed');
+    phone.classList.add('home-active');
+    phone.classList.remove('on-breathe');
+    return;
+  }
+  phone.classList.remove('home-active');
+  phone.classList.remove('editing');          // leave edit mode when navigating away
+  phone.classList.toggle('on-breathe',id==='breathe');   // llama replaces orb on breathe
+  $('#'+id).classList.add('active');
+  home.classList.add('pushed');
+  if(id==='journal') resetLock();
+  if(id==='schedule') renderSchedule();
+  if(id==='music') renderMusic();
+  if(id==='breathe') initBreathe();
+  if(id==='reading') initReading();
+  if(id==='files') initFiles();
+}
+$$('[data-back]').forEach(b=>b.addEventListener('click',()=>go('home')));
+
+/* ============================================================
+   QUOTES
+   ============================================================ */
+const QUOTES=[
+  "you are exactly where you need to be.",
+  "small steps still move you forward.",
+  "be the main character today.",
+  "you've survived 100% of your hard days.",
+  "soft heart, strong spine.",
+  "do it scared.",
+  "your only competition is who you were yesterday.",
+  "you're allowed to take up space.",
+  "good things are coming — keep going.",
+  "rest is productive too.",
+];
+function rollQuote(){
+  const i=Math.floor(Math.random()*QUOTES.length);
+  $('#quoteText').textContent=QUOTES[i];
+}
+$('#quoteNext').addEventListener('click',rollQuote);
+
+/* ---------- secret easter egg: tap the Katelynn badge ---------- */
+const EGG_URL='https://www.youtube.com/watch?v=uZfRaWAtBVg&list=RDuZfRaWAtBVg&start_radio=1';
+$('.badge').addEventListener('click',()=>{
+  const b=$('.badge'); b.classList.remove('egg'); void b.offsetWidth; b.classList.add('egg');
+  setTimeout(()=>b.classList.remove('egg'),700);
+  // Web: hands off to the YouTube app/site. In the native wrapper, swap for a
+  // youtube:// deep link (Capacitor App.openUrl) to force the app open.
+  window.open(EGG_URL,'_blank');
+});
+
+/* ============================================================
+   TO-DO  (ported spin + strike mechanic from second-brain)
+   ============================================================ */
+const todoList=$('#todoList');
+function loadTodos(){ return DB.get('todos', [
+  {id:uid(),text:'clean bedroom',done:true,created:now(),completed:now()},
+  {id:uid(),text:'order filament',done:false,created:now()},
+  {id:uid(),text:'try making dal tadka',done:false,created:now()},
+]); }
+function saveTodos(){
+  const arr=$$('.t-row',todoList).map(r=>({
+    id:r.dataset.id,
+    text:r.querySelector('.t-text').textContent.trim(),
+    done:r.classList.contains('done'),
+    created:Number(r.dataset.created)||now(),
+    completed:r.dataset.completed?Number(r.dataset.completed):null,
+  }));
+  DB.set('todos',arr);
+  updatePeeks();
+}
+function fmtTs(ms){ const d=new Date(Number(ms)); return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+function todoSub(row){
+  let s=row.dataset.created?'added '+fmtTs(row.dataset.created):'';
+  if(row.classList.contains('done')&&row.dataset.completed) s+=(s?'  ·  ':'')+'done '+fmtTs(row.dataset.completed);
+  return s;
+}
+function makeTodoRow(t){
+  const row=document.createElement('div');
+  row.className='t-row'+(t.done?' done striking':'');
+  row.dataset.id=t.id||uid();
+  row.dataset.created=t.created||now();
+  if(t.done) row.dataset.completed=t.completed||now();
+  row.innerHTML='<div class="t-star"></div><span class="t-text"></span><span class="t-sub"></span>';
+  row.querySelector('.t-text').textContent=t.text;
+  row.querySelector('.t-sub').textContent=todoSub(row);
+  wireTodo(row);
+  return row;
+}
+function wireTodo(row){
+  row.addEventListener('click',e=>{
+    if(e.target.closest('.t-sub')) return;
+    const star=row.querySelector('.t-star');
+    if(row.classList.contains('done')){
+      row.classList.remove('done','striking'); row.removeAttribute('data-completed');
+      row.querySelector('.t-sub').textContent=todoSub(row); saveTodos();
+    }else{
+      star.classList.add('popping');
+      star.addEventListener('animationend',()=>{
+        star.classList.remove('popping');
+        row.classList.add('done'); row.dataset.completed=now();
+        requestAnimationFrame(()=>requestAnimationFrame(()=>row.classList.add('striking')));
+        row.querySelector('.t-sub').textContent=todoSub(row); saveTodos();
+      },{once:true});
+    }
+  });
+  // long-press / right-click → clear
+  let lp=null;
+  const clear=()=>{ row.remove(); saveTodos(); toast('cleared'); };
+  row.addEventListener('contextmenu',e=>{e.preventDefault();clear();});
+  const cancel=()=>{ if(lp){clearTimeout(lp);lp=null;} };
+  row.addEventListener('pointerdown',()=>{ lp=setTimeout(()=>{lp=null;clear();},600); });
+  ['pointerup','pointermove','pointerleave'].forEach(ev=>row.addEventListener(ev,cancel));
+}
+function renderTodos(){
+  todoList.innerHTML='';
+  loadTodos().forEach(t=>todoList.appendChild(makeTodoRow(t)));
+}
+function addTodo(text){
+  if(!text.trim()) return;
+  todoList.appendChild(makeTodoRow({id:uid(),text:text.trim(),done:false,created:now()}));
+  saveTodos();
+}
+$('#todoAdd').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.value.trim()){ addTodo(e.target.value); e.target.value=''; }
+});
+
+/* ---- categories: tasks / groceries / household ---------------- */
+const SUBCATS={
+  groceries:['produce','dairy & eggs','meat & seafood','pantry & dry','frozen','bakery','snacks','drinks','other'],
+  household:['paper goods','cleaning','laundry','bath','kitchen','other'],
+};
+const CL_DEFAULTS={
+  groceries:[
+    {id:uid(),text:'bananas',sub:'produce',done:false,created:now()},
+    {id:uid(),text:'milk',sub:'dairy & eggs',done:false,created:now()},
+    {id:uid(),text:'chicken',sub:'meat & seafood',done:false,created:now()},
+  ],
+  household:[
+    {id:uid(),text:'toilet paper',sub:'paper goods',done:false,created:now()},
+    {id:uid(),text:'dish soap',sub:'cleaning',done:false,created:now()},
+  ],
+};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+function loadCL(cat){ return DB.get(cat, CL_DEFAULTS[cat]||[]); }
+function saveCL(cat,arr){ DB.set(cat,arr); }
+function clRowHTML(it){
+  return `<div class="t-row${it.done?' done striking':''}" data-id="${it.id}">`+
+         `<div class="t-star"></div><span class="t-text">${esc(it.text)}</span></div>`;
+}
+function renderCL(cat){
+  const panel=$('#cat'+cap(cat));
+  const list=panel.querySelector('.cl-list');
+  const items=loadCL(cat);
+  const bySub={}; items.forEach(it=>{ const s=it.sub||'other'; (bySub[s]=bySub[s]||[]).push(it); });
+  let html='';
+  SUBCATS[cat].forEach(sub=>{
+    if(!bySub[sub]||!bySub[sub].length) return;
+    html+=`<div class="cl-sub"><div class="cl-sub-head">${esc(sub)}</div>`+
+          bySub[sub].map(clRowHTML).join('')+`</div>`;
+  });
+  list.innerHTML=html||'<div class="empty">nothing here yet ✦</div>';
+  list.querySelectorAll('.t-row').forEach(r=>wireCLRow(r,cat));
+}
+function setCL(cat,id,patch){ const a=loadCL(cat); const it=a.find(x=>x.id===id); if(it){ Object.assign(it,patch); saveCL(cat,a); } }
+function wireCLRow(row,cat){
+  row.addEventListener('click',()=>{
+    const star=row.querySelector('.t-star'), id=row.dataset.id;
+    if(row.classList.contains('done')){
+      row.classList.remove('done','striking'); setCL(cat,id,{done:false,completed:null});
+    }else{
+      star.classList.add('popping');
+      star.addEventListener('animationend',()=>{
+        star.classList.remove('popping');
+        row.classList.add('done');
+        requestAnimationFrame(()=>requestAnimationFrame(()=>row.classList.add('striking')));
+        setCL(cat,id,{done:true,completed:now()});
+      },{once:true});
+    }
+  });
+  let lp=null;
+  const clear=()=>{ saveCL(cat,loadCL(cat).filter(x=>x.id!==row.dataset.id)); renderCL(cat); toast('removed'); };
+  row.addEventListener('contextmenu',e=>{e.preventDefault();clear();});
+  const cancel=()=>{ if(lp){clearTimeout(lp);lp=null;} };
+  row.addEventListener('pointerdown',()=>{ lp=setTimeout(()=>{lp=null;clear();},600); });
+  ['pointerup','pointermove','pointerleave'].forEach(ev=>row.addEventListener(ev,cancel));
+}
+function addCL(cat,text,sub){
+  if(!text.trim()) return;
+  const a=loadCL(cat); a.push({id:uid(),text:text.trim(),sub:sub||'other',done:false,created:now()});
+  saveCL(cat,a); renderCL(cat);
+}
+function switchCat(cat){
+  $$('.tcat').forEach(t=>t.classList.toggle('on',t.dataset.cat===cat));
+  $$('.todo-cat-panel').forEach(p=>p.classList.remove('on'));
+  $('#cat'+cap(cat)).classList.add('on');
+  if(cat==='groceries'||cat==='household') renderCL(cat);
+}
+$$('.tcat').forEach(b=>b.addEventListener('click',()=>switchCat(b.dataset.cat)));
+// populate sub-category selects
+$('#grocSub').innerHTML=SUBCATS.groceries.map(s=>`<option>${s}</option>`).join('');
+$('#houseSub').innerHTML=SUBCATS.household.map(s=>`<option>${s}</option>`).join('');
+$('#grocAdd').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.value.trim()){ addCL('groceries',e.target.value,$('#grocSub').value); e.target.value=''; } });
+$('#houseAdd').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.value.trim()){ addCL('household',e.target.value,$('#houseSub').value); e.target.value=''; } });
+
+/* ============================================================
+   SCHEDULE
+   ============================================================ */
+const DEFAULT_JOBS=['Cafe','Boutique','Babysitting'];
+function loadJobs(){ return DB.get('jobs', DEFAULT_JOBS.slice()); }
+function saveJobs(j){ DB.set('jobs',j); }
+function loadEvents(){ return DB.get('events', []); }
+function saveEvents(e){ DB.set('events',e); updatePeeks(); }
+
+const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtTime(t){ // "14:30" -> "2:30 pm"
+  if(!t) return '';
+  const [h,m]=t.split(':').map(Number);
+  const ap=h>=12?'pm':'am'; const hh=((h+11)%12)+1;
+  return hh+(m?(':'+String(m).padStart(2,'0')):':00')+' '+ap;
+}
+function renderSchedule(){
+  const list=$('#schedList');
+  const events=loadEvents().slice().sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  if(!events.length){
+    list.innerHTML='<div class="empty">no shifts yet —<br>upload a schedule photo or add one manually ✦</div>';
+    return;
+  }
+  // group by date
+  const groups={};
+  events.forEach(e=>{ (groups[e.date]=groups[e.date]||[]).push(e); });
+  list.innerHTML=Object.keys(groups).sort().map(date=>{
+    const d=new Date(date+'T00:00:00');
+    const head=`${DOW[d.getDay()]} <span class="dnum">${MON[d.getMonth()]} ${d.getDate()}</span>`;
+    const rows=groups[date].map(e=>`
+      <div class="ev ${e.type||'work'}">
+        <button class="ev-del" data-del="${e.id}">×</button>
+        <div class="ev-time">${fmtTime(e.start)}${e.end?'<br>'+fmtTime(e.end):''}</div>
+        <div class="ev-body">
+          <div class="ev-title">${esc(e.title||e.job||'Shift')}</div>
+          ${e.place?`<div class="ev-meta">📍 ${esc(e.place)}</div>`:''}
+          <span class="ev-tag">${esc(e.job||e.type||'work')}</span>
+        </div>
+      </div>`).join('');
+    return `<div class="day-group"><div class="day-head">${head}</div>${rows}</div>`;
+  }).join('');
+  $$('[data-del]',list).forEach(b=>b.addEventListener('click',()=>{
+    saveEvents(loadEvents().filter(e=>e.id!==b.dataset.del)); renderSchedule();
+  }));
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---- manual add sheet ---- */
+function openAddEvent(prefill){
+  prefill=prefill||{};
+  const jobs=loadJobs();
+  const today=new Date().toISOString().slice(0,10);
+  openSheet(`
+    <h3>add to schedule</h3>
+    <div class="field"><label>what</label><input id="evTitle" placeholder="Morning shift" value="${esc(prefill.title||'')}"></div>
+    <div class="field"><label>type</label>
+      <select id="evType">
+        <option value="work">Work</option>
+        <option value="personal">Personal</option>
+        <option value="appointment">Appointment</option>
+      </select></div>
+    <div class="field" id="jobField"><label>job</label>
+      <select id="evJob">${jobs.map(j=>`<option>${esc(j)}</option>`).join('')}<option value="__add">+ add a job…</option></select></div>
+    <div class="field"><label>where</label><input id="evPlace" placeholder="location / address" value="${esc(prefill.place||'')}"></div>
+    <div class="field"><label>date</label><input id="evDate" type="date" value="${prefill.date||today}"></div>
+    <div class="field-row">
+      <div class="field"><label>start</label><input id="evStart" type="time" value="${prefill.start||'09:00'}"></div>
+      <div class="field"><label>end</label><input id="evEnd" type="time" value="${prefill.end||'17:00'}"></div>
+    </div>
+    <button class="btn-save" id="evSave">save</button>
+  `);
+  const typeSel=$('#evType'), jobField=$('#jobField');
+  const syncType=()=>{ jobField.style.display=typeSel.value==='work'?'block':'none'; };
+  typeSel.addEventListener('change',syncType); syncType();
+  $('#evJob').addEventListener('change',e=>{
+    if(e.target.value==='__add'){
+      const name=prompt('new job name:');
+      if(name&&name.trim()){ const jobs=loadJobs(); jobs.push(name.trim()); saveJobs(jobs);
+        e.target.innerHTML=jobs.map(j=>`<option>${esc(j)}</option>`).join('')+'<option value="__add">+ add a job…</option>';
+        e.target.value=name.trim();
+      }else e.target.selectedIndex=0;
+    }
+  });
+  $('#evSave').addEventListener('click',()=>{
+    const type=typeSel.value;
+    const ev={id:uid(),title:$('#evTitle').value.trim(),type,
+      job:type==='work'?$('#evJob').value:'',place:$('#evPlace').value.trim(),
+      date:$('#evDate').value,start:$('#evStart').value,end:$('#evEnd').value};
+    if(!ev.date){ toast('pick a date'); return; }
+    const evs=loadEvents(); evs.push(ev); saveEvents(evs);
+    closeSheet(); renderSchedule(); toast('added to schedule ✦');
+  });
+}
+$('#schedAdd').addEventListener('click',()=>openAddEvent());
+
+/* ---- photo upload → (stubbed) auto-populate ---- */
+$('#schedUpload').addEventListener('click',()=>$('#schedFile').click());
+$('#schedFile').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{ openParseSheet(reader.result); };
+  reader.readAsDataURL(file);
+  e.target.value='';
+});
+function openParseSheet(dataUrl){
+  openSheet(`
+    <h3>reading your schedule</h3>
+    <img src="${dataUrl}" style="width:100%;border-radius:14px;margin-bottom:12px">
+    <div class="parse-status on"><span class="dots">finding your shifts</span></div>
+    <div id="parseResult"></div>
+  `);
+  parseScheduleImage(dataUrl).then(events=>{
+    $('.parse-status').classList.remove('on');
+    const jobs=loadJobs();
+    $('#parseResult').innerHTML=`
+      <p style="font-family:var(--serif);font-style:italic;color:var(--purple)">found ${events.length} shifts — edit anything, then save:</p>
+      ${events.map((ev,i)=>`
+        <div class="ev work" style="cursor:default">
+          <div class="ev-time">${fmtTime(ev.start)}<br>${fmtTime(ev.end)}</div>
+          <div class="ev-body">
+            <input value="${esc(ev.job)}" data-f="job" data-i="${i}" style="width:100%;border:none;background:rgba(255,255,255,.6);border-radius:8px;padding:6px 8px;font-family:var(--serif);margin-bottom:4px">
+            <input value="${esc(ev.place||'')}" data-f="place" data-i="${i}" placeholder="where" style="width:100%;border:none;background:rgba(255,255,255,.6);border-radius:8px;padding:6px 8px;font-size:12px">
+            <div class="ev-meta" style="margin-top:4px">${DOW[new Date(ev.date+'T00:00:00').getDay()]} · ${ev.date}</div>
+          </div>
+        </div>`).join('')}
+      <button class="btn-save" id="parseSave">add all ${events.length} to schedule</button>
+      ${DB.get('backendUrl','')?'':'<p style="font-size:10px;color:rgba(94,17,112,.5);text-align:center;margin-top:10px">⚠︎ these are sample shifts — connect AI (Settings → connect AI) to read real photos.</p>'}
+    `;
+    $('#parseResult').dataset.events=JSON.stringify(events);
+    $$('#parseResult input').forEach(inp=>inp.addEventListener('input',()=>{
+      const evs=JSON.parse($('#parseResult').dataset.events);
+      evs[inp.dataset.i][inp.dataset.f]=inp.value;
+      $('#parseResult').dataset.events=JSON.stringify(evs);
+    }));
+    $('#parseSave').addEventListener('click',()=>{
+      const evs=JSON.parse($('#parseResult').dataset.events);
+      const all=loadEvents();
+      evs.forEach(ev=>all.push({...ev,id:uid(),type:'work',title:ev.job}));
+      saveEvents(all); closeSheet(); renderSchedule(); toast('shifts added ✦');
+    });
+  });
+}
+
+/* Reads a schedule photo into shifts via the Claude-vision backend if one is
+   configured (Settings → connect AI); otherwise returns sample shifts so the
+   flow is demonstrable offline. */
+function sampleShifts(){
+  const jobs=loadJobs();
+  const base=new Date(); const mk=off=>{ const d=new Date(base); d.setDate(d.getDate()+off); return d.toISOString().slice(0,10); };
+  return [
+    {date:mk(1),start:'08:00',end:'14:00',job:jobs[0]||'Work',place:'Main St'},
+    {date:mk(3),start:'12:00',end:'18:00',job:jobs[1]||jobs[0]||'Work',place:''},
+    {date:mk(5),start:'09:30',end:'15:30',job:jobs[0]||'Work',place:'Main St'},
+  ];
+}
+function parseScheduleImage(dataUrl){
+  const base=DB.get('backendUrl','');
+  if(base){
+    return fetch(base.replace(/\/$/,'')+'/api/parse-schedule',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ image:dataUrl, today:new Date().toISOString().slice(0,10), jobs:loadJobs() }),
+    }).then(r=>r.json()).then(j=>(j.events&&j.events.length)?j.events:sampleShifts()).catch(()=>sampleShifts());
+  }
+  return new Promise(res=>setTimeout(()=>res(sampleShifts()),1200));
+}
+
+/* ============================================================
+   JOURNAL  (3-digit lock, default 666)
+   ============================================================ */
+let codeBuffer='';
+function getCode(){ return DB.get('journalCode','666'); }
+function resetLock(){
+  codeBuffer=''; renderDots();
+  $('#journalBody').classList.remove('open');
+  $('#lockPad').style.display='flex';
+  $('#lockNote').textContent='enter your 3-digit code';
+}
+function renderDots(){
+  $$('.lock-dot').forEach((d,i)=>d.classList.toggle('filled',i<codeBuffer.length));
+}
+$('#keypad').addEventListener('click',e=>{
+  const k=e.target.closest('.key'); if(!k||k.classList.contains('blank')) return;
+  if(k.dataset.act==='del'){ codeBuffer=codeBuffer.slice(0,-1); renderDots(); return; }
+  if(codeBuffer.length>=3) return;
+  codeBuffer+=k.textContent.trim(); renderDots();
+  if(codeBuffer.length===3) setTimeout(checkCode,180);
+});
+function checkCode(){
+  if(codeBuffer===getCode()){ unlockJournal(); }
+  else{
+    const pad=$('#lockPad'); pad.classList.add('shake');
+    $('#lockNote').textContent='nope — try again';
+    setTimeout(()=>{pad.classList.remove('shake');codeBuffer='';renderDots();},420);
+  }
+}
+function unlockJournal(){
+  $('#lockPad').style.display='none';
+  $('#journalBody').classList.add('open');
+  renderJournal();
+}
+$('#changeCode').addEventListener('click',()=>{
+  const cur=prompt('current code:'); if(cur!==getCode()){ toast('wrong code'); return; }
+  const next=prompt('new 3-digit code:');
+  if(next&&/^\d{3}$/.test(next)){ DB.set('journalCode',next); toast('code changed ✦'); }
+  else toast('needs to be 3 digits');
+});
+$('#jLock').addEventListener('click',resetLock);
+function loadJournal(){ return DB.get('journal',[]); }
+function renderJournal(){
+  const list=$('#jList');
+  const entries=loadJournal();
+  list.innerHTML=entries.length?entries.slice().reverse().map(en=>`
+    <div class="j-entry">
+      <button class="ev-del" data-jdel="${en.id}">×</button>
+      <div class="j-date">${new Date(en.ts).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</div>
+      <div class="j-text">${esc(en.text)}</div>
+    </div>`).join('')
+    :'<div class="empty">your entries will live here ✦</div>';
+  $$('[data-jdel]',list).forEach(b=>b.addEventListener('click',()=>{
+    DB.set('journal',loadJournal().filter(x=>x.id!==b.dataset.jdel)); renderJournal();
+  }));
+}
+$('#jSave').addEventListener('click',()=>{
+  const txt=$('#jNew').value.trim(); if(!txt){ toast('write something first'); return; }
+  const j=loadJournal(); j.push({id:uid(),ts:now(),text:txt}); DB.set('journal',j);
+  $('#jNew').value=''; renderJournal(); toast('saved ✦');
+});
+
+/* ============================================================
+   HOME PEEKS (live previews inside the frames)
+   ============================================================ */
+function tileSize(key){
+  const f=$('#frames .frame[data-tile="'+key+'"]');
+  return (f && f.dataset.size) || loadTiles()[key] || 'small';
+}
+// toggle a task straight from its big tile preview
+function toggleTodoById(id){
+  const arr=DB.get('todos',[]); const it=arr.find(t=>t.id===id); if(!it) return;
+  it.done=!it.done; it.completed=it.done?now():null;
+  DB.set('todos',arr); renderTodos(); updatePeeks();
+}
+function updatePeeks(){
+  const DW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today=new Date().toISOString().slice(0,10);
+
+  // ---- to-do tile (interactive when big) ----
+  const todos=DB.get('todos',[]);
+  const open=todos.filter(t=>!t.done);
+  const tdSize=tileSize('todo'), tdEl=$('#peekTodo');
+  if(tdSize==='small'){
+    tdEl.innerHTML=open.length?`<span class="big">${open.length}</span><span>open</span>`:'all done ✦';
+  }else if(!todos.length){
+    tdEl.innerHTML='all done ✦';
+  }else{
+    const cap=tdSize==='wide'?3:(tdSize==='big'?6:7);
+    const show=todos.slice().sort((a,b)=>(a.done?1:0)-(b.done?1:0)).slice(0,cap);   // open first
+    tdEl.innerHTML='<div class="tile-list">'+show.map(t=>
+      `<div class="tl-row${t.done?' done':''}" data-id="${t.id}"><span class="tl-star"></span><span class="tl-txt">${esc(t.text)}</span></div>`
+    ).join('')+(todos.length>cap?`<div class="tl-more">+${todos.length-cap} more</div>`:'')+'</div>';
+    tdEl.querySelectorAll('.tl-row').forEach(r=>r.addEventListener('click',e=>{ e.stopPropagation(); toggleTodoById(r.dataset.id); }));
+  }
+
+  // ---- schedule tile (more shifts the bigger it is) ----
+  const upcoming=DB.get('events',[]).filter(e=>e.date>=today).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  const scSize=tileSize('schedule'), scEl=$('#peekSchedule');
+  if(!upcoming.length){
+    scEl.innerHTML='<span style="opacity:.7">no shifts<br>yet ✦</span>';
+  }else if(scSize==='small'){
+    scEl.innerHTML='<div class="peek-sched">'+upcoming.slice(0,3).map(e=>{
+      const d=new Date(e.date+'T00:00:00');
+      return `<div class="ps-row"><span class="ps-day">${DW[d.getDay()]} ${fmtTime(e.start).replace(':00','')}</span><span class="ps-what">${esc(e.job||e.title||'shift')}</span></div>`;
+    }).join('')+'</div>';
+  }else{
+    const cap=scSize==='wide'?3:6;
+    scEl.innerHTML='<div class="tile-list">'+upcoming.slice(0,cap).map(e=>{
+      const d=new Date(e.date+'T00:00:00');
+      return `<div class="tl-row"><span class="tl-time">${DW[d.getDay()]} ${fmtTime(e.start).replace(':00','')}</span><span class="tl-txt">${esc(e.job||e.title||'shift')}${e.place?' · '+esc(e.place):''}</span></div>`;
+    }).join('')+(upcoming.length>cap?`<div class="tl-more">+${upcoming.length-cap} more</div>`:'')+'</div>';
+  }
+}
+
+/* ============================================================
+   CHATBOT  (orb → chat sheet). AI is STUBBED via callKit().
+   ============================================================ */
+const orb=$('#orb'), chat=$('#chat'), chatLog=$('#chatLog');
+let chatGreeted=false;
+function openChat(){
+  chat.classList.add('open'); orb.classList.add('awake');
+  if(!chatGreeted){ botSay("hi Katelynn ✦ i'm Kit. i can add tasks, peek at your schedule, or start a journal entry. what do you need?"); chatGreeted=true; }
+}
+function closeChat(){ chat.classList.remove('open'); orb.classList.remove('awake'); }
+orb.addEventListener('click',openChat);
+$('#chatClose').addEventListener('click',closeChat);
+$('#chatSettings').addEventListener('click',openSettings);
+function bubble(text,cls){
+  const d=document.createElement('div'); d.className='msg '+cls; d.textContent=text;
+  chatLog.appendChild(d); chatLog.scrollTop=chatLog.scrollHeight; return d;
+}
+function botSay(text){ bubble(text,'bot'); }
+function sendChat(text){
+  text=(text||$('#chatInput').value).trim(); if(!text) return;
+  bubble(text,'me'); $('#chatInput').value='';
+  const typing=bubble('thinking…','bot typing');
+  callKit(text).then(reply=>{ typing.remove(); botSay(reply); });
+}
+$('#chatSend').addEventListener('click',()=>sendChat());
+$('#chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+$$('#chatChips .chip').forEach(c=>c.addEventListener('click',()=>sendChat(c.textContent)));
+
+/* Kit's brain. Adds tasks locally (instant), then asks the real Claude backend
+   if one is configured (Settings → AI backend), otherwise falls back to a local
+   canned reply so the orb is still useful offline. */
+function kitStub(t){
+  if(t.includes('today')||t.includes('schedule')||t.includes('work')){
+    const events=DB.get('events',[]); const today=new Date().toISOString().slice(0,10);
+    const tod=events.filter(e=>e.date===today);
+    return tod.length?`today: ${tod.map(e=>`${e.job||e.title} at ${fmtTime(e.start)}`).join(', ')}`:"nothing on your schedule for today — enjoy it ✦";
+  }
+  if(t.includes('journal')) return "open the journal tile and i'll have a fresh page ready. (your code's still 666 unless you changed it ✦)";
+  return "i can really chat once an AI backend is connected (Settings → connect AI). for now try: \"add a task: water the plants\" ✦";
+}
+function callKit(text){
+  const t=text.toLowerCase();
+  // instant local action: add a task — works with or without a backend
+  const taskMatch=t.match(/(?:add|remind me to|i need to|i have to)\s+(.+)/);
+  if(taskMatch&&(t.includes('task')||t.includes('add')||t.includes('remind')||t.includes('to do'))){
+    const task=taskMatch[1]
+      .replace(/^(a |an )?task\b[:\s]*/i,'').replace(/^to\s+/i,'')
+      .replace(/\s+to (my )?(to.?do|list).*$/i,'').trim();
+    if(task){ addTodo(task); return Promise.resolve(`added “${task}” to your to-do list ✦`); }
+  }
+  const base=DB.get('backendUrl','');
+  if(base){
+    return fetch(base.replace(/\/$/,'')+'/api/chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:text}]}),
+    }).then(r=>r.json()).then(j=>j.reply||kitStub(t)).catch(()=>kitStub(t));
+  }
+  return new Promise(res=>setTimeout(()=>res(kitStub(t)),500));
+}
+
+/* ============================================================
+   HOME TILES  (Metro/Lumia style — resizable in edit mode)
+   ============================================================ */
+const TILE_SIZES={ small:[2,3], wide:[4,2], tall:[2,5], big:[4,4] };
+const SIZE_ORDER=['small','wide','tall','big'];
+const TILE_DEFAULTS={ help:'wide', schedule:'small', todo:'small', journal:'small', breathe:'small', reading:'small', music:'wide', files:'small' };
+function loadTiles(){ return DB.get('tiles', {...TILE_DEFAULTS}); }
+function saveTiles(t){ DB.set('tiles',t); }
+function applyTile(frame,size){
+  const [cw,rw]=TILE_SIZES[size]||TILE_SIZES.small;
+  frame.style.setProperty('--cw',cw); frame.style.setProperty('--rw',rw);
+  frame.dataset.size=size;
+}
+function applyAllTiles(){
+  const t=loadTiles();
+  $$('.frame').forEach(f=>applyTile(f, t[f.dataset.tile]||'small'));
+}
+function cycleTile(frame){
+  const t=loadTiles();
+  const cur=t[frame.dataset.tile]||'small';
+  const next=SIZE_ORDER[(SIZE_ORDER.indexOf(cur)+1)%SIZE_ORDER.length];
+  t[frame.dataset.tile]=next; saveTiles(t); applyTile(frame,next);
+  if(typeof updatePeeks==='function') updatePeeks();   // refresh size-aware previews
+}
+function enterEdit(){ $('.phone').classList.add('editing'); }
+function exitEdit(){
+  if(!$('.phone').classList.contains('editing')) return;
+  $('.phone').classList.remove('editing');
+  saveTileOrder();              // belt-and-suspenders: persist arrangement on exit
+  toast('layout saved ✦');
+}
+$('#editDone').addEventListener('click',exitEdit);
+
+// tile order persistence (for drag-to-rearrange)
+function saveTileOrder(){ DB.set('tileOrder', $$('#frames .frame').map(f=>f.dataset.tile)); }
+function applyTileOrder(){
+  const order=DB.get('tileOrder',null); if(!order || !Array.isArray(order)) return;
+  const frames=$('#frames');
+  order.forEach(key=>{ const el=frames.querySelector('.frame[data-tile="'+key+'"]'); if(el) frames.appendChild(el); });
+  // any tiles not in the saved order (e.g. a newly added widget) stay visible:
+  // "help now" pins to the very top, everything else goes to the end
+  $$('#frames .frame').forEach(f=>{ if(!order.includes(f.dataset.tile)){ if(f.dataset.tile==='help') frames.prepend(f); else frames.appendChild(f); } });
+}
+
+// per-tile interaction: tap=open · long-press=edit · in edit: drag=rearrange, ⤢=resize
+let suppressClick=false;
+$$('.frame').forEach(f=>{
+  let timer=null, drag=null;
+  f.addEventListener('pointerdown',e=>{
+    if($('.phone').classList.contains('editing')){
+      if(e.target.closest('.tile-size')) return;
+      drag={x0:e.clientX,y0:e.clientY,moved:false};
+      try{ f.setPointerCapture(e.pointerId); }catch(_){}
+    }else{
+      timer=setTimeout(()=>{ timer=null; suppressClick=true; enterEdit(); },550);
+    }
+  });
+  f.addEventListener('pointermove',e=>{
+    if(timer){ clearTimeout(timer); timer=null; }      // moving cancels long-press
+    if(!drag) return;
+    const dx=e.clientX-drag.x0, dy=e.clientY-drag.y0;
+    if(!drag.moved && Math.hypot(dx,dy)<8) return;
+    drag.moved=true; f.classList.add('dragging');
+    f.style.transform='translate('+dx+'px,'+dy+'px)';
+    f.style.pointerEvents='none';
+    const under=document.elementFromPoint(e.clientX,e.clientY);
+    f.style.pointerEvents='';
+    const tgt=under && under.closest ? under.closest('.frame') : null;
+    if(tgt && tgt!==f && tgt.parentNode===f.parentNode){
+      const r=tgt.getBoundingClientRect();
+      const after=(e.clientY > r.top+r.height/2) || (e.clientX > r.left+r.width/2 && Math.abs(e.clientY-(r.top+r.height/2))<r.height/2);
+      if(after) tgt.after(f); else tgt.before(f);
+      drag.x0=e.clientX; drag.y0=e.clientY; f.style.transform='';
+    }
+  });
+  const endDrag=()=>{
+    if(timer){ clearTimeout(timer); timer=null; }
+    if(!drag) return;
+    f.classList.remove('dragging'); f.style.transform='';
+    if(drag.moved){ saveTileOrder(); suppressClick=true; }
+    drag=null;
+  };
+  f.addEventListener('pointerup',endDrag);
+  f.addEventListener('pointercancel',endDrag);
+  f.addEventListener('pointerleave',()=>{ if(timer){ clearTimeout(timer); timer=null; } });
+  f.addEventListener('click',e=>{
+    if(suppressClick){ suppressClick=false; e.stopPropagation(); return; }
+    if($('.phone').classList.contains('editing')) return;   // don't navigate while editing
+    go(f.dataset.go);
+  });
+  f.querySelector('.tile-size').addEventListener('click',e=>{ e.stopPropagation(); cycleTile(f); });
+});
+// tapping empty home space exits edit mode
+$('#home').addEventListener('click',e=>{
+  if($('.phone').classList.contains('editing') && !e.target.closest('.frame') && !e.target.closest('.edit-done')) exitEdit();
+});
+// restore-from-backup file picker
+$('#restoreFile').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) importBackup(f); e.target.value=''; });
+
+/* ============================================================
+   SETTINGS  (opened from the chat)
+   ============================================================ */
+function openSettings(){
+  closeChat();
+  const calm=DB.get('calm',false);
+  const th=loadTheme();
+  openSheet(`
+    <h3>settings</h3>
+    <div class="set-sub">home</div>
+    <div class="set-list">
+      <button class="set-btn" id="setEdit"><span class="s-ico">✦</span> edit home tiles <span class="s-val">resize &amp; arrange</span></button>
+      <button class="set-btn" id="setReset"><span class="s-ico">↺</span> reset tile layout</button>
+    </div>
+    <div class="set-sub">feel</div>
+    <div class="set-list">
+      <button class="set-btn set-toggle" id="setCalm"><span class="s-ico">🌙</span> calm mode <span class="s-val">${calm?'on':'off'}</span></button>
+    </div>
+    <div class="set-sub">look</div>
+    <div class="set-list">
+      <label class="set-btn"><span class="s-ico">🎨</span> tile color <input type="color" id="thAccent" value="${th.accent}"></label>
+      <label class="set-btn"><span class="s-ico">✏️</span> icon color <input type="color" id="thIcon" value="${th.icon}"></label>
+      <label class="set-btn"><span class="s-ico">🟪</span> background <input type="color" id="thWin" value="${th.win}"></label>
+      <label class="set-btn"><span class="s-ico">◐</span> bg opacity <input type="range" id="thWinA" min="0" max="1" step="0.05" value="${th.winA}"></label>
+      <label class="set-btn"><span class="s-ico">▦</span> grid opacity <input type="range" id="thGridA" min="0" max="0.6" step="0.02" value="${th.gridA}"></label>
+      <button class="set-btn" id="thReset"><span class="s-ico">↺</span> reset look</button>
+    </div>
+    <div class="set-sub">assistant</div>
+    <div class="set-list">
+      <button class="set-btn set-toggle" id="setAI"><span class="s-ico">✦</span> connect AI (Kit + photo reading) <span class="s-val">${DB.get('backendUrl','')?'on':'off'}</span></button>
+    </div>
+    <div class="set-sub">sync &amp; backup</div>
+    <div class="set-list">
+      <button class="set-btn set-toggle" id="setGoogle"><span class="s-ico">🟦</span> ${DB.get('googleConnected',false)?'Google connected':'connect Google'} <span class="s-val">${DB.get('googleConnected',false)?'on':'calendar + drive'}</span></button>
+      <button class="set-btn" id="setSync"><span class="s-ico">📅</span> sync Google Calendar now</button>
+      <button class="set-btn" id="setBackup"><span class="s-ico">⤓</span> back up to my phone <span class="s-val">.json</span></button>
+      <button class="set-btn" id="setRestore"><span class="s-ico">⤒</span> restore from a backup</button>
+    </div>
+    <div class="set-sub">privacy</div>
+    <div class="set-list">
+      <button class="set-btn" id="setCode"><span class="s-ico">🔒</span> change journal code</button>
+      <button class="set-btn" id="setWipe"><span class="s-ico">🗑</span> clear everything</button>
+    </div>
+    <div class="set-sub">made with love for Katelynn ✦ · Google sync + Drive backup go live when the app is wrapped (they need Google sign-in set up)</div>
+  `);
+  $('#setEdit').addEventListener('click',()=>{ closeSheet(); enterEdit(); toast('tap ⤢ to resize · done when finished'); });
+  $('#setAI').addEventListener('click',()=>{
+    const cur=DB.get('backendUrl','');
+    const v=prompt('AI backend URL (where the Katelynn server runs):\ne.g. https://abc.trycloudflare.com\n\nLeave blank to disconnect.', cur);
+    if(v===null) return;
+    DB.set('backendUrl',v.trim());
+    $('#setAI .s-val').textContent=v.trim()?'on':'off';
+    checkTts().then(updateVoiceCur);   // see if premium voices are available
+    toast(v.trim()?'AI connected ✦':'AI disconnected');
+  });
+  $('#setGoogle').addEventListener('click',connectGoogle);
+  $('#setSync').addEventListener('click',syncGoogleCalendar);
+  $('#setBackup').addEventListener('click',exportBackup);
+  $('#setRestore').addEventListener('click',()=>$('#restoreFile').click());
+  $('#setReset').addEventListener('click',()=>{ saveTiles({...TILE_DEFAULTS}); applyAllTiles(); toast('layout reset'); });
+  $('#setCalm').addEventListener('click',()=>{ const v=!DB.get('calm',false); DB.set('calm',v); applyCalm(); $('#setCalm .s-val').textContent=v?'on':'off'; });
+  $('#thAccent').addEventListener('input',e=>setTheme({accent:e.target.value}));
+  $('#thIcon').addEventListener('input',e=>setTheme({icon:e.target.value}));
+  $('#thWin').addEventListener('input',e=>setTheme({win:e.target.value}));
+  $('#thWinA').addEventListener('input',e=>setTheme({winA:Number(e.target.value)}));
+  $('#thGridA').addEventListener('input',e=>setTheme({gridA:Number(e.target.value)}));
+  $('#thReset').addEventListener('click',()=>{ DB.set('theme',{}); applyTheme();
+    ['thAccent','thIcon','thWin'].forEach(id=>$('#'+id).value=THEME_DEFAULT[id==='thAccent'?'accent':id==='thIcon'?'icon':'win']);
+    $('#thWinA').value=THEME_DEFAULT.winA; $('#thGridA').value=THEME_DEFAULT.gridA; toast('look reset'); });
+  $('#setCode').addEventListener('click',()=>{
+    const cur=prompt('current code:'); if(cur!==getCode()){ toast('wrong code'); return; }
+    const next=prompt('new 3-digit code:');
+    if(next&&/^\d{3}$/.test(next)){ DB.set('journalCode',next); toast('code changed ✦'); } else toast('needs 3 digits');
+  });
+  $('#setWipe').addEventListener('click',()=>{
+    if(confirm('Clear ALL of Katelynn\'s data on this device? This cannot be undone.')){
+      Object.keys(localStorage).filter(k=>k.startsWith('kate.')).forEach(k=>localStorage.removeItem(k));
+      location.reload();
+    }
+  });
+}
+function applyCalm(){ $('.phone').classList.toggle('calm', DB.get('calm',false)); }
+
+/* ---- tile look / theme (color, opacity, grid, icon) ---- */
+const THEME_DEFAULT={ accent:'#C42BFF', icon:'#7A0E9B', win:'#E89BAC', winA:1, gridA:0.10 };
+function loadTheme(){ return { ...THEME_DEFAULT, ...DB.get('theme',{}) }; }
+function hexToRgb(h){ h=String(h).replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255].join(','); }
+function applyTheme(){
+  const t=loadTheme(), s=$('.phone').style;
+  s.setProperty('--accent',t.accent);
+  s.setProperty('--icon',t.icon);
+  s.setProperty('--win-rgb',hexToRgb(t.win));
+  s.setProperty('--win-a',t.winA);
+  s.setProperty('--grid-a',t.gridA);
+}
+function setTheme(patch){ DB.set('theme',{...loadTheme(),...patch}); applyTheme(); }
+
+/* ---- local backup (works now) ----
+   Gathers every kate.* key into one JSON file she can save to her phone,
+   and restores from one. This is the "on her phone" half of the backup. */
+function gatherData(){
+  const o={}; Object.keys(localStorage).filter(k=>k.startsWith('kate.')).forEach(k=>{ o[k]=localStorage.getItem(k); });
+  return o;
+}
+function exportBackup(){
+  const data={ app:'katelynn', exported:new Date().toISOString(), data:gatherData() };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='katelynn-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('backup saved to your phone ✦');
+  // If Google is connected, this is also where we'd upload the same blob to Drive.
+  if(DB.get('googleConnected',false)) toast('…and queued for Google Drive');
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const parsed=JSON.parse(r.result);
+      const data=parsed.data||parsed;
+      if(!data || typeof data!=='object') throw new Error('bad file');
+      Object.keys(data).forEach(k=>{ if(k.startsWith('kate.')) localStorage.setItem(k,data[k]); });
+      toast('backup restored ✦'); setTimeout(()=>location.reload(),600);
+    }catch(_){ toast('that doesn’t look like a backup'); }
+  };
+  r.readAsText(file);
+}
+
+/* ---- Google (Calendar + Drive) — STUB ----
+   Real OAuth needs a Google client ID + verified consent screen, set up when the
+   app is wrapped (Capacitor). Then connectGoogle() runs the sign-in, syncGoogleCalendar()
+   pulls events into the schedule, and exportBackup() also uploads to Drive. */
+function connectGoogle(){
+  const on=!DB.get('googleConnected',false);
+  DB.set('googleConnected',on);
+  const b=$('#setGoogle');
+  if(b){ b.querySelector('.s-val').textContent=on?'on':'calendar + drive';
+         b.childNodes[1].textContent=on?' Google connected ':' connect Google '; }
+  toast(on?'Google linked ✦ (full sign-in arrives with the app)':'Google disconnected');
+}
+function syncGoogleCalendar(){
+  if(!DB.get('googleConnected',false)){ toast('connect Google first'); return; }
+  // STUB: when wired, fetch upcoming events from the Calendar API and merge into kate.events.
+  toast('calendar sync arrives with the app ✦');
+}
+
+/* ============================================================
+   LLAMAS — clean single-line outlines (IKEA-instruction style)
+   ============================================================ */
+const LL_STROKE='stroke="#7A0E9B" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+// fluffy alpaca face, front-on, friendly
+const LLAMA_FACE_SVG=
+`<svg viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet" ${LL_STROKE}>
+  <path d="M27 24C22 15 23 9 26 9c3 0 3 9 2 15"/>
+  <path d="M37 24c5-9 4-15 1-15-3 0-3 9-2 15"/>
+  <path d="M23 31c0-9 18-9 18 0v8c0 11-18 11-18 0z"/>
+  <circle cx="29" cy="34" r="1.7" fill="#7A0E9B" stroke="none"/>
+  <circle cx="35" cy="34" r="1.7" fill="#7A0E9B" stroke="none"/>
+  <path d="M29.5 43c1.4 1.8 4.6 1.8 6 0"/>
+</svg>`;
+// side alpaca, FACING RIGHT (its travel direction); legs vary per walk frame
+function walkSVG(legs){
+  return `<svg viewBox="0 0 96 70" preserveAspectRatio="xMidYMid meet" ${LL_STROKE}>
+    <path d="M14 38c-4-1-5 5-1 7"/>
+    <path d="M16 40C16 28 30 25 42 25 56 25 66 30 66 38 66 46 54 50 42 50 28 50 16 49 16 40Z"/>
+    <path d="M61 32C65 22 67 16 71 13"/>
+    <path d="M55 34C59 26 62 20 66 14"/>
+    <path d="M66 14C62 9 70 6 76 8 81 10 82 15 78 18 75 20 70 19 66 16"/>
+    <path d="M71 9C69 4 71 2 73 4 74 5 74 8 73 10"/>
+    <circle cx="72" cy="12.5" r="1.3" fill="#7A0E9B" stroke="none"/>
+    ${legs}
+  </svg>`;
+}
+const LEGS_A='<path d="M27 49l-1 15"/><path d="M37 50v15"/><path d="M50 50l1 15"/><path d="M60 48l2 15"/>';
+const LEGS_B='<path d="M27 49l-3 15"/><path d="M37 50l2 15"/><path d="M50 50l-2 15"/><path d="M60 48l3 15"/>';
+function renderLlamas(){
+  if($('#biLlama')) $('#biLlama').innerHTML=LLAMA_FACE_SVG;
+  if($('#llamaF1')) $('#llamaF1').innerHTML=walkSVG(LEGS_A);
+  if($('#llamaF2')) $('#llamaF2').innerHTML=walkSVG(LEGS_B);
+}
+
+/* ============================================================
+   BREATHE  (breathing patterns + grounding + soothe kit)
+   ============================================================ */
+const BREATH_PATTERNS={
+  box:{meta:'box breathing · in 4 · hold 4 · out 4 · hold 4',phases:[['breathe in',4],['hold',4],['breathe out',4],['hold',4]],rec:128},
+  478:{meta:'4·7·8 · in 4 · hold 7 · out 8 — deeply calming',phases:[['breathe in',4],['hold',7],['breathe out',8]],rec:114},
+  simple:{meta:'simple · in 4 · out 6 — easy and steady',phases:[['breathe in',4],['breathe out',6]],rec:96},
+};
+let breathRunning=false, breathTimer=null, breathCountTimer=null, curPattern='box';
+function fmtClock(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+/* ---- soothing spoken cues + a picker of nice voices (accents/genders/vibes) ---- */
+let breathVoice=null, speechPrimed=false;
+const ACCENTS={'en-us':'American','en-gb':'British','en-au':'Australian','en-in':'Indian','en-ie':'Irish','en-za':'South African','en-ca':'Canadian','en-nz':'New Zealand','en-sg':'Singaporean','en-ph':'Filipino','en-gb-scotland':'Scottish'};
+const VOICE_HINTS={ // first name -> [gender, vibe]
+  rishi:['male','warm'],veena:['female','warm'],isha:['female','warm'],samantha:['female','friendly'],
+  alex:['male','natural'],daniel:['male','calm'],arthur:['male','steady'],oliver:['male','crisp'],
+  kate:['female','clear'],serena:['female','soft'],stephanie:['female','gentle'],martha:['female','warm'],
+  karen:['female','bright'],lee:['male','easygoing'],catherine:['female','elegant'],gordon:['male','deep'],
+  moira:['female','gentle'],tessa:['female','smooth'],aaron:['male','easy'],nicky:['female','friendly'],
+  victoria:['female','classic'],fiona:['female','soft'],ava:['female','warm'],evan:['male','easy'],
+  joelle:['female','soft'],nathan:['male','calm'],zoe:['female','bright'],matilda:['female','bright'],
+  jamie:['male','mellow'],william:['male','steady']
+};
+function langKey(l){ return (l||'').toLowerCase().replace('_','-'); }
+function accentOf(l){ l=langKey(l); return ACCENTS[l] || (l.startsWith('en')?'English':l); }
+function voiceMeta(v){ const key=v.name.toLowerCase().replace(/\s*\(.*\)$/,'').split(' ')[0]; const h=VOICE_HINTS[key]||[]; return {gender:h[0]||'',vibe:h[1]||'',accent:accentOf(v.lang)}; }
+function curatedVoices(){
+  if(!('speechSynthesis' in window)) return [];
+  let vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
+  const NOVELTY=/bad news|good news|bells|bubbles|cellos|jester|organ|trinoids|whisper|wobble|zarvox|albert|bahh|boing|deranged|hysterical|pipe|superstar|junior|grandma|grandpa|rocko|shelley|sandy|flo|eddy|reed|bruce|kathy|princess|ralph|fred|agnes/i;
+  vs=vs.filter(v=>!NOVELTY.test(v.name));
+  const score=v=>{ let s=0; const k=v.name.toLowerCase().split(' ')[0]; if(VOICE_HINTS[k])s+=3; if(/enhanced|premium|siri/i.test(v.name))s+=2; if(v.localService)s+=1; return s; };
+  vs.sort((a,b)=>score(b)-score(a));
+  const byAccent=new Map(), rest=[];
+  for(const v of vs){ const a=accentOf(v.lang); if(!byAccent.has(a)) byAccent.set(a,v); else rest.push(v); }
+  let out=[...byAccent.values(), ...rest];
+  const seen=new Set(); out=out.filter(v=>{ if(seen.has(v.name))return false; seen.add(v.name); return true; });
+  return out.slice(0,10);
+}
+function pickBreathVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const vs=speechSynthesis.getVoices(); if(!vs.length) return null;
+  const saved=DB.get('voiceName','');
+  if(saved){ const m=vs.find(v=>v.name===saved); if(m) return m; }
+  const ind=vs.filter(v=>/en[-_]?IN/i.test(v.lang));     // default: calm Indian male if present
+  return ind.find(v=>/rishi/i.test(v.name)) || ind[0]
+      || vs.find(v=>/en[-_]?US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || vs[0] || null;
+}
+function loadBreathVoice(){ breathVoice=pickBreathVoice(); updateVoiceCur(); }
+// (the initial loadBreathVoice() call lives after all the voice declarations to avoid a TDZ on OFFLINE_VOICES)
+function primeSpeech(){ if(speechPrimed||!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechPrimed=true; }catch(_){} }
+
+/* ---- PREMIUM voices: natural cloud TTS via the backend (ElevenLabs / OpenAI) ---- */
+const PREMIUM_CATALOG={
+  elevenlabs:[
+    {id:'21m00Tcm4TlvDq8ikWAM',name:'Rachel',accent:'American',gender:'female',vibe:'calm'},
+    {id:'pMsXgVXv3BLzUgSXRplE',name:'Serena',accent:'American',gender:'female',vibe:'soft'},
+    {id:'oWAxZDx7w5VEj9dCyTzz',name:'Grace',accent:'American',gender:'female',vibe:'soothing'},
+    {id:'pNInz6obpgDQGcFmaJgB',name:'Adam',accent:'American',gender:'male',vibe:'deep'},
+    {id:'onwK4e9ZLuTAKqWW03F9',name:'Daniel',accent:'British',gender:'male',vibe:'calm'},
+    {id:'pFZP5JQG7iQjIQuC4Bku',name:'Lily',accent:'British',gender:'female',vibe:'warm'},
+    {id:'IKne3meq5aSn9XLyUdCD',name:'Charlie',accent:'Australian',gender:'male',vibe:'easy'},
+    {id:'D38z5RcWu1voky8WS1ja',name:'Fin',accent:'Irish',gender:'male',vibe:'warm'},
+  ],
+  openai:[
+    {id:'nova',name:'Nova',accent:'American',gender:'female',vibe:'warm'},
+    {id:'shimmer',name:'Shimmer',accent:'American',gender:'female',vibe:'soft'},
+    {id:'alloy',name:'Alloy',accent:'American',gender:'neutral',vibe:'calm'},
+    {id:'echo',name:'Echo',accent:'American',gender:'male',vibe:'easy'},
+    {id:'onyx',name:'Onyx',accent:'American',gender:'male',vibe:'deep'},
+    {id:'fable',name:'Fable',accent:'British',gender:'male',vibe:'storyteller'},
+  ],
+};
+let ttsProvider=null;
+function premiumVoices(){ return PREMIUM_CATALOG[ttsProvider]||[]; }
+function checkTts(){
+  const base=DB.get('backendUrl','');
+  if(!base){ ttsProvider=null; return Promise.resolve(); }
+  return fetch(base.replace(/\/$/,'')+'/api/health').then(r=>r.json()).then(j=>{ ttsProvider=(j&&j.tts)||null; }).catch(()=>{ ttsProvider=null; });
+}
+const ttsCache=new Map();
+function ttsAudio(text,voiceId){
+  const base=DB.get('backendUrl',''); if(!base) return Promise.resolve(null);
+  const key=voiceId+'|'+text; if(ttsCache.has(key)) return Promise.resolve(ttsCache.get(key));
+  return fetch(base.replace(/\/$/,'')+'/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:voiceId})})
+    .then(r=>r.ok?r.blob():null).then(b=>{ if(!b) return null; const url=URL.createObjectURL(b); ttsCache.set(key,url); return url; }).catch(()=>null);
+}
+let ttsEl=null, ttsReady=false, _silentUrl=null;
+function makeSilentUrl(){ const sr=8000,n=Math.floor(sr*0.06),buf=new ArrayBuffer(44+n),dv=new DataView(buf);
+  const wr=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
+  wr(0,'RIFF');dv.setUint32(4,36+n,true);wr(8,'WAVE');wr(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
+  dv.setUint32(24,sr,true);dv.setUint32(28,sr,true);dv.setUint16(32,1,true);dv.setUint16(34,8,true);wr(36,'data');dv.setUint32(40,n,true);
+  for(let i=0;i<n;i++)dv.setUint8(44+i,128); return URL.createObjectURL(new Blob([buf],{type:'audio/wav'})); }
+function unlockTts(){ if(ttsReady||!('Audio' in window)) return; try{ ttsEl=new Audio(); _silentUrl=_silentUrl||makeSilentUrl(); ttsEl.src=_silentUrl; const p=ttsEl.play(); if(p&&p.then)p.then(()=>{ttsReady=true;}).catch(()=>{}); else ttsReady=true; }catch(_){} }
+function playTts(url){ try{ if(!ttsEl) ttsEl=new Audio(); ttsEl.src=url; ttsEl.currentTime=0; ttsEl.play().catch(()=>{}); }catch(_){} }
+function stopTts(){ try{ if(ttsEl) ttsEl.pause(); }catch(_){} }
+function playPremium(text,voiceId){ ttsAudio(text,voiceId).then(url=>{ if(url) playTts(url); else webSpeak(text); }); }
+function prewarmPremium(){ const pv=DB.get('premiumVoice',''); if(!pv||!DB.get('backendUrl',''))return; ['breathe in','breathe out','hold'].forEach(t=>ttsAudio(t,pv)); }
+
+function webSpeak(text){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    if(!breathVoice) breathVoice=pickBreathVoice();
+    if(breathVoice){ u.voice=breathVoice; u.lang=breathVoice.lang; } else { u.lang='en-US'; }
+    u.rate=0.8; u.pitch=0.95; u.volume=1;   // slow + low = soothing
+    speechSynthesis.speak(u);
+  }catch(_){}
+}
+function speakCue(text){
+  if(!DB.get('breathVoice',true)) return;
+  const off=offlineClip(text);
+  if(off){ playTts(off); return; }                                     // bundled natural voice (free, offline)
+  const pv=DB.get('premiumVoice','');
+  if(pv && DB.get('backendUrl','')){ playPremium(text,pv); return; }   // natural cloud voice
+  webSpeak(text);                                                       // device voice fallback
+}
+function previewVoice(v){
+  if(!('speechSynthesis' in window)) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance('breathe in… and slowly out.'); u.voice=v; u.lang=v.lang; u.rate=0.85; u.pitch=0.97; speechSynthesis.speak(u); }catch(_){}
+}
+function previewPremium(v){ unlockTts(); ttsAudio('breathe in… and slowly out.', v.id).then(url=>{ if(url) playTts(url); }); }
+
+/* ---- OFFLINE natural voices: pre-rendered cue clips bundled in the app (free, no backend) ---- */
+const OFFLINE_VOICES=[
+  {id:'ravi',   name:'Ravi',   accent:'British',           gender:'male',   vibe:'warm · slow'},
+  {id:'amy',    name:'Amy',    accent:'American',          gender:'female', vibe:'calm'},
+  {id:'ryan',   name:'Ryan',   accent:'American',          gender:'male',   vibe:'easy'},
+  {id:'eva',    name:'Eva',    accent:'American',          gender:'female', vibe:'warm'},
+  {id:'joe',    name:'Joe',    accent:'American',          gender:'male',   vibe:'mellow'},
+  {id:'kristin',name:'Kristin',accent:'American',          gender:'female', vibe:'bright'},
+  {id:'marcus', name:'Marcus', accent:'American',          gender:'male',   vibe:'smooth'},
+  {id:'cori',   name:'Cori',   accent:'British',           gender:'female', vibe:'gentle'},
+  {id:'alan',   name:'Alan',   accent:'British',           gender:'male',   vibe:'steady'},
+  {id:'jenny',  name:'Jenny',  accent:'British',           gender:'female', vibe:'soft'},
+  {id:'theo',   name:'Theo',   accent:'Northern English',  gender:'male',   vibe:'mellow'},
+  {id:'isla',   name:'Isla',   accent:'Scottish',          gender:'female', vibe:'gentle'},
+];
+const CUE_FILE={'breathe in':'in','breathe out':'out','hold':'hold','breathe':'breathe','well done':'done'};
+function offlineClip(text){ const id=DB.get('offlineVoice',''); const f=CUE_FILE[text]; if(!id||!f) return null; return 'assets/voice/'+id+'/'+f+'.mp3'; }
+function previewOffline(v){ unlockTts(); playTts('assets/voice/'+v.id+'/in.mp3'); }
+function prewarmOffline(){ const id=DB.get('offlineVoice',''); if(!id) return; ['in','out','hold'].forEach(f=>{ try{ fetch('assets/voice/'+id+'/'+f+'.mp3').catch(()=>{}); }catch(_){} }); }
+function updateVoiceCur(){
+  const el=$('#voiceCur'); if(!el) return;
+  const ov=DB.get('offlineVoice','');
+  if(ov){ const v=OFFLINE_VOICES.find(x=>x.id===ov); if(v){ el.textContent=v.name+' · '+v.accent+' ✦'; return; } }
+  const pv=DB.get('premiumVoice','');
+  if(pv){ const v=premiumVoices().find(x=>x.id===pv); if(v){ el.textContent=v.name+' · '+v.accent+' ✦'; return; } }
+  const v=breathVoice||pickBreathVoice();
+  if(v){ const m=voiceMeta(v); el.textContent=v.name.replace(/\s*\(.*\)$/,'')+(m.accent?(' · '+m.accent):''); } else el.textContent='default';
+}
+// --- hide/remove voices you don't want cluttering the list (per-device preference) ---
+function getHidden(){ return new Set(DB.get('hiddenVoices',[])); }
+function isHidden(key){ return getHidden().has(key); }
+function toggleHidden(key){ const s=getHidden(); s.has(key)?s.delete(key):s.add(key); DB.set('hiddenVoices',[...s]); ensureValidVoice(); }
+function ensureValidVoice(){   // if the active voice got hidden, fall back to a visible one
+  const h=getHidden();
+  if(DB.get('offlineVoice','') && h.has('o:'+DB.get('offlineVoice',''))){ const fb=OFFLINE_VOICES.find(v=>!h.has('o:'+v.id)); DB.set('offlineVoice', fb?fb.id:''); }
+  if(DB.get('premiumVoice','') && h.has('p:'+DB.get('premiumVoice',''))) DB.set('premiumVoice','');
+  if(DB.get('voiceName','') && h.has('d:'+DB.get('voiceName',''))) DB.set('voiceName','');
+  if(!DB.get('offlineVoice','') && !DB.get('premiumVoice','') && !DB.get('voiceName','')){ const fb=OFFLINE_VOICES.find(v=>!h.has('o:'+v.id)); if(fb) DB.set('offlineVoice',fb.id); }
+  breathVoice=pickBreathVoice(); updateVoiceCur();
+}
+let vpManage=false;
+function openVoicePicker(){
+  primeSpeech(); unlockTts(); checkTts();   // refresh premium availability for next open
+  const h=getHidden();
+  const allOff=OFFLINE_VOICES, allPrem=premiumVoices(), allDev=curatedVoices();
+  const off  = vpManage?allOff : allOff.filter(v=>!h.has('o:'+v.id));
+  const prem = vpManage?allPrem: allPrem.filter(v=>!h.has('p:'+v.id));
+  const dev  = vpManage?allDev : allDev.filter(v=>!h.has('d:'+v.name));
+  const curOff=DB.get('offlineVoice',''), curPrem=DB.get('premiumVoice',''), curDev=DB.get('voiceName','')||(breathVoice&&breathVoice.name)||'';
+  const row=(attr,val,name,tags,sel,key)=> vpManage
+    ? `<div class="vp-row manage${h.has(key)?' hid':''}"><span class="vp-info"><span class="vp-name">${name}</span><span class="vp-tags">${tags}</span></span><button class="vp-del" data-key="${key}">${h.has(key)?'restore':'remove'}</button></div>`
+    : `<button class="vp-row${sel?' on':''}" ${attr}="${val}"><span class="vp-play">▶</span><span class="vp-info"><span class="vp-name">${name}</span><span class="vp-tags">${tags}</span></span><span class="vp-check">✓</span></button>`;
+  const offRows=off.map(v=>row('data-ov',v.id, v.name+' ✦', [v.accent,v.gender,v.vibe].filter(Boolean).join(' · '), v.id===curOff, 'o:'+v.id)).join('');
+  const premRows=prem.map(v=>row('data-pv',v.id, v.name+' ✦', [v.accent,v.gender,v.vibe].filter(Boolean).join(' · '), v.id===curPrem, 'p:'+v.id)).join('');
+  const devRows=dev.map(v=>{ const m=voiceMeta(v); return row('data-v', v.name.replace(/"/g,'&quot;'), v.name.replace(/\s*\(.*\)$/,''), [m.accent,m.gender,m.vibe].filter(Boolean).join(' · '), (!curOff&&!curPrem&&v.name===curDev), 'd:'+v.name); }).join('');
+  const offSection = off.length ? `<div class="vp-sub">✦ natural voices — free &amp; offline</div><div class="vp-list">${offRows}</div>` : '';
+  const premSection = prem.length ? `<div class="vp-sub">✦ premium cloud — natural</div><div class="vp-list">${premRows}</div>` : '';
+  const devSection = dev.length ? `<div class="vp-sub">on this device</div><div class="vp-list">${devRows}</div>` : '';
+  const note = vpManage ? 'tap “remove” to hide a voice you won’t use · “restore” brings it back' : 'tap ▶ to hear it · tap a row to use it';
+  openSheet(`<div class="vp"><div class="vp-top"><div class="vp-h">choose a voice ✦</div><button class="vp-manage" id="vpManage">${vpManage?'done':'manage'}</button></div><div class="vp-note">${note}</div>${offSection}${premSection}${devSection}<div class="vp-note dim">the “natural” voices are built in — they work offline with no account. device voices vary by phone.</div></div>`);
+  $('#vpManage').addEventListener('click',()=>{ vpManage=!vpManage; openVoicePicker(); });
+  if(vpManage){
+    $$('.vp-del').forEach(b=>b.addEventListener('click',()=>{ toggleHidden(b.dataset.key); openVoicePicker(); }));
+    return;   // no select/preview in manage mode
+  }
+  $$('.vp-row[data-ov]').forEach(row=>{ const v=off.find(x=>x.id===row.dataset.ov);
+    row.querySelector('.vp-play').addEventListener('click',e=>{ e.stopPropagation(); previewOffline(v); });
+    row.addEventListener('click',()=>{ DB.set('offlineVoice',v.id); DB.set('premiumVoice',''); DB.set('voiceName',''); $$('.vp-row').forEach(r=>r.classList.remove('on')); row.classList.add('on'); updateVoiceCur(); previewOffline(v); });
+  });
+  $$('.vp-row[data-pv]').forEach(row=>{ const v=prem.find(x=>x.id===row.dataset.pv);
+    row.querySelector('.vp-play').addEventListener('click',e=>{ e.stopPropagation(); previewPremium(v); });
+    row.addEventListener('click',()=>{ DB.set('premiumVoice',v.id); DB.set('offlineVoice',''); DB.set('voiceName',''); $$('.vp-row').forEach(r=>r.classList.remove('on')); row.classList.add('on'); updateVoiceCur(); previewPremium(v); });
+  });
+  $$('.vp-row[data-v]').forEach(row=>{ const v=dev.find(x=>x.name===row.dataset.v);
+    row.querySelector('.vp-play').addEventListener('click',e=>{ e.stopPropagation(); previewVoice(v); });
+    row.addEventListener('click',()=>{ DB.set('voiceName',v.name); DB.set('premiumVoice',''); DB.set('offlineVoice',''); breathVoice=v; $$('.vp-row').forEach(r=>r.classList.remove('on')); row.classList.add('on'); updateVoiceCur(); previewVoice(v); });
+  });
+}
+// now that all voice declarations exist, do the initial voice load
+if('speechSynthesis' in window){ loadBreathVoice(); speechSynthesis.onvoiceschanged=loadBreathVoice; }
+function stopBreath(){
+  breathRunning=false;
+  if(breathTimer){clearTimeout(breathTimer);breathTimer=null;}
+  if(breathCountTimer){clearInterval(breathCountTimer);breathCountTimer=null;}
+  if('speechSynthesis' in window) speechSynthesis.cancel();   // hush the voice
+  stopTts();                                                  // hush premium audio too
+  $('.phone').classList.remove('breathing');     // un-focus the background
+  const o=$('#breathOrb'); if(o){o.style.transition='transform .6s ease';o.style.transform='scale(.62)';}
+  if($('#breathCue')) $('#breathCue').textContent='ready?';
+  if($('#breathStart')) $('#breathStart').textContent='start';
+  if($('#breathCount')) $('#breathCount').textContent='';
+}
+// A warm, varied send-off spoken (and shown) at the end of a session — fresh every time.
+const CLOSINGS=[
+  "beautifully done. carry this calm with you — have a gentle day.",
+  "you showed up for yourself just now, and that matters. go easy out there.",
+  "take this steadiness with you. the rest of your day is yours.",
+  "you did something kind for yourself today. i'm proud of you.",
+  "whatever comes next, you can meet it one breath at a time.",
+  "you are grounded, you are here, and you are enough.",
+  "hold onto this softness. you've got today.",
+  "however the day unfolds, you can always come back to this.",
+  "notice how much steadier you feel. let that carry you forward.",
+  "you made a little space for yourself. keep it for the rest of the day.",
+  "be proud — you chose calm. now go have a beautiful day.",
+  "the hard parts pass. you're already through more than you know.",
+  "soft heart, steady breath. you're ready for whatever's next.",
+  "you came back to now. stay close to it as you go.",
+  "let the calm linger. you deserve a gentle rest of the day.",
+  "one slow breath at a time — that's all today asks of you.",
+  "you're doing better than you think. truly.",
+  "carry this quiet with you. you're going to be okay.",
+  "meet today gently — and that includes being gentle with you.",
+  "you paused, you breathed, you came back. that's strength.",
+  "take care of yourself today the way you just did.",
+  "the calm is yours to keep. go be wonderful.",
+  "you showed up, and that's the whole victory. have a lovely day.",
+  "steady, grounded, here. now go shine a little.",
+];
+let _lastClosing=-1;
+function pickClosing(){
+  if(CLOSINGS.length<2) return CLOSINGS[0]||'';
+  let i; do{ i=Math.floor(Math.random()*CLOSINGS.length); }while(i===_lastClosing);
+  _lastClosing=i; return CLOSINGS[i];
+}
+function speakClosing(sel){
+  const line=pickClosing();
+  if(sel && $(sel)) $(sel).textContent=line+' ✦';
+  if(!DB.get('breathVoice',true)) return line;   // voice muted → show text only
+  // small delay so it doesn't collide with the speech-cancel from stopBreath()
+  setTimeout(()=>{ try{
+    const off=DB.get('offlineVoice','');
+    if(off){ playTts('assets/voice/'+off+'/done.mp3'); }   // spoken in the SELECTED offline voice
+    else speakCue(line);                                    // premium/device synth the full line in the selected voice
+  }catch(_){} }, 280);
+  return line;
+}
+function finishBreath(){                          // gentle auto-stop after the recommended time
+  stopBreath();
+  if($('#breathCue')) $('#breathCue').textContent='done ✦';
+  if($('#breathCount')) $('#breathCount').textContent='nicely done — go again any time';
+  speakClosing('#biTxt');                         // a fresh, spoken send-off
+}
+function startBreath(){
+  stopBreath(); breathRunning=true;
+  primeSpeech(); unlockTts(); prewarmOffline(); prewarmPremium();   // unlock iOS audio within the tap gesture
+  $('.phone').classList.add('breathing');        // soft-focus everything but the orb
+  $('#breathStart').textContent='stop';
+  $('#biTxt').textContent='follow the shape — let it lead your breath. i\'m right here. ✦';
+  const pat=BREATH_PATTERNS[curPattern];
+  const phases=pat.phases, deadline=Date.now()+(pat.rec||120)*1000;
+  const orb=$('#breathOrb'), cue=$('#breathCue');
+  let i=0;
+  (function step(){
+    if(!breathRunning) return;
+    const [label,secs]=phases[i];
+    cue.textContent=label;
+    speakCue(label);                              // soothing spoken guide
+    orb.style.transition=`transform ${secs}s ease-in-out`;
+    if(label==='breathe in') orb.style.transform='scale(1)';
+    else if(label==='breathe out') orb.style.transform='scale(.62)';
+    i=(i+1)%phases.length;
+    breathTimer=setTimeout(step,secs*1000);
+  })();
+  // recommended-duration countdown → gently stops itself when it's up
+  const tick=()=>{
+    if(!breathRunning) return;
+    const left=(deadline-Date.now())/1000;
+    if(left<=0){ finishBreath(); return; }
+    if($('#breathCount')) $('#breathCount').textContent='auto-stops in '+fmtClock(left);
+  };
+  tick(); breathCountTimer=setInterval(tick,1000);
+}
+// PANIC flow — one tap from home: jump straight into a guided breath
+function exitBreath(){
+  const wasPanic=$('.phone').classList.contains('panic');
+  stopBreath();
+  if(wasPanic) go('home');
+}
+function enterPanic(){
+  go('breathe');
+  $('.phone').classList.add('panic');
+  const q=QUOTES[Math.floor(Math.random()*QUOTES.length)];   // a fresh motivational quote up top
+  if($('#panicMsg')) $('#panicMsg').textContent=q;
+  pickPattern('simple');   // auto-pick the simple 4·6 (~90s) rhythm
+  startBreath();
+}
+function patternCycle(p){ return BREATH_PATTERNS[p].phases.reduce((s,ph)=>s+ph[1],0); }
+function syncLlama(){
+  const cyc=patternCycle(curPattern);
+  const llama=$('#breatheLlama'); if(!llama) return;
+  llama.style.setProperty('--cyc',cyc+'s');         // bob in time with the breath
+  llama.style.setProperty('--walk',(cyc*2.6)+'s');  // and stroll slowly to that tempo
+}
+function pickPattern(p){
+  curPattern=p; $('#breathMeta').textContent=BREATH_PATTERNS[p].meta;
+  $$('[data-pattern]').forEach(b=>b.classList.toggle('on',b.dataset.pattern===p));
+  syncLlama();
+  if(breathRunning) startBreath();
+}
+const GROUND=[
+  {n:5,text:'things you can see',sub:'look around — name each one slowly'},
+  {n:4,text:'things you can feel',sub:'textures, temperature, your clothes'},
+  {n:3,text:'things you can hear',sub:'near sounds and far ones'},
+  {n:2,text:'things you can smell',sub:'or two scents you love'},
+  {n:1,text:'thing you can taste',sub:'or take one slow breath'},
+];
+let groundIdx=0;
+function renderGround(){
+  if(groundIdx>=GROUND.length){
+    $('#groundStep').innerHTML='<div class="gs-num">🤍</div><div class="gs-text">you made it back to now</div><div class="gs-sub">notice how your body feels — a little steadier, maybe</div>';
+    $('#groundDots').innerHTML=''; $('#groundNext').textContent='start over';
+    speakClosing('#biTxt');                       // fresh spoken send-off at the end of grounding
+    return;
+  }
+  const g=GROUND[groundIdx];
+  $('#groundStep').innerHTML=`<div class="gs-num">${g.n}</div><div class="gs-text">${g.text}</div><div class="gs-sub">${g.sub}</div>`;
+  $('#groundDots').innerHTML=GROUND.map((_,i)=>`<i class="${i<=groundIdx?'on':''}"></i>`).join('');
+  $('#groundNext').textContent=groundIdx===GROUND.length-1?'finish':'next';
+}
+function brTab(which){
+  $$('.br-tab').forEach(t=>t.classList.toggle('on',t.dataset.br===which));
+  $('#brBreath').classList.toggle('on',which==='breath');
+  $('#brGround').classList.toggle('on',which==='ground');
+  $('#brRes').classList.toggle('on',which==='res');
+  stopBreath();
+  if(which==='ground'){ groundIdx=0; renderGround(); $('#biTxt').textContent='5-4-3-2-1 — gently bring yourself back to the present. ✦'; }
+  if(which==='breath'){ $('#biTxt').textContent='pick a rhythm and press start — i\'ll guide you. ✦'; }
+  if(which==='res'){ $('#biTxt').textContent='little things that help when it\'s a lot. take what you need. ✦'; }
+}
+let breatheWired=false;
+function initBreathe(){
+  if(!breatheWired){
+    $$('.br-tab').forEach(t=>t.addEventListener('click',()=>brTab(t.dataset.br)));
+    $$('[data-pattern]').forEach(b=>b.addEventListener('click',()=>pickPattern(b.dataset.pattern)));
+    $('#breathStart').addEventListener('click',()=>breathRunning?stopBreath():startBreath());
+    $('#breathExit').addEventListener('click',exitBreath);
+    // while focused, tapping the orb gently ends the exercise
+    $('#breathOrb').addEventListener('click',()=>{ if(breathRunning) stopBreath(); });
+    $('#groundNext').addEventListener('click',()=>{ primeSpeech(); unlockTts(); groundIdx++; if(groundIdx>GROUND.length) groundIdx=0; renderGround(); });
+    // voice on/off toggle
+    const vb=$('#breathVoiceBtn');
+    if(vb) vb.addEventListener('click',()=>{
+      const on=!DB.get('breathVoice',true); DB.set('breathVoice',on);
+      updateVoiceBtn();
+      // a tap primes the speech engine on iOS + previews the voice
+      if(on){ primeSpeech(); loadBreathVoice(); speakCue('breathe'); } else if('speechSynthesis' in window){ speechSynthesis.cancel(); }
+    });
+    const vp=$('#voicePick'); if(vp) vp.addEventListener('click',openVoicePicker);
+    breatheWired=true;
+    pickPattern('box');
+  }
+  // default to a bundled natural voice on first run (free, offline, non-robotic)
+  if(!DB.get('offlineVoice','') && !DB.get('premiumVoice','') && !DB.get('voiceName','')) DB.set('offlineVoice','amy');
+  ensureValidVoice();   // don't leave a hidden voice as the active one
+  updateVoiceBtn(); updateVoiceCur(); checkTts().then(updateVoiceCur);
+  brTab('breath'); stopBreath();
+}
+function updateVoiceBtn(){
+  const vb=$('#breathVoiceBtn'); if(!vb) return;
+  const on=DB.get('breathVoice',true);
+  vb.textContent=on?'🔊':'🔇';
+  vb.classList.toggle('off',!on);
+  vb.title=on?'voice guide on':'voice guide off';
+}
+
+/* ============================================================
+   MUSIC  (Spotify + YouTube embeds; real login comes with wrapper)
+   ============================================================ */
+function spotifyEmbed(url){
+  const m=String(url).match(/open\.spotify\.com\/(intl-\w+\/)?(track|playlist|album|artist|episode|show)\/([A-Za-z0-9]+)/);
+  if(!m) return null;
+  return `https://open.spotify.com/embed/${m[2]}/${m[3]}`;
+}
+function youtubeEmbed(url){
+  let m=String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+  if(m) return `https://www.youtube.com/embed/${m[1]}`;
+  m=String(url).match(/[?&]list=([A-Za-z0-9_-]+)/);
+  if(m) return `https://www.youtube.com/embed/videoseries?list=${m[1]}`;
+  return null;
+}
+function appleEmbed(url){
+  // any music.apple.com share link → the embeddable player host
+  if(!/music\.apple\.com\//.test(String(url))) return null;
+  return String(url).trim().replace(/^https?:\/\/(embed\.)?music\.apple\.com/,'https://embed.music.apple.com');
+}
+function renderMusic(){
+  const connected=DB.get('spConnected',false);
+  $('#spStatus').textContent=connected?'connected ✦':'not connected';
+  $('#spStatus').classList.toggle('on',connected);
+  $('#spConnect').textContent=connected?'Spotify connected ✓':'Connect Spotify';
+  const sp=DB.get('spLast',''); if(sp) $('#spEmbed').innerHTML=`<iframe style="height:152px" src="${sp}" allow="encrypted-media"></iframe>`;
+  const yt=DB.get('ytLast',''); if(yt) $('#ytEmbed').innerHTML=`<iframe style="height:200px" src="${yt}" allowfullscreen></iframe>`;
+  const amOn=DB.get('amConnected',false);
+  $('#amStatus').textContent=amOn?'connected ✦':'not connected';
+  $('#amStatus').classList.toggle('on',amOn);
+  const am=DB.get('amLast',''); if(am) $('#amEmbed').innerHTML=`<iframe style="height:175px" src="${am}" allow="autoplay *; encrypted-media *;"></iframe>`;
+}
+$('#amConnect').addEventListener('click',()=>{
+  DB.set('amConnected',true); renderMusic();
+  // opens her Apple Music; full in-app library needs MusicKit (wrapper stage)
+  window.open('https://music.apple.com/','_blank');
+  toast('opening Apple Music ✦');
+});
+$('#amLoad').addEventListener('click',()=>{
+  const url=appleEmbed($('#amLink').value);
+  if(!url){ toast('paste an Apple Music link'); return; }
+  DB.set('amLast',url); $('#amEmbed').innerHTML=`<iframe style="height:175px" src="${url}" allow="autoplay *; encrypted-media *;"></iframe>`;
+});
+$('#spConnect').addEventListener('click',()=>{
+  // Real OAuth login arrives with the native wrapper — flag it as connected for now.
+  DB.set('spConnected',true); renderMusic();
+  toast('Spotify linked ✦ (full login comes with the app)');
+});
+$('#spLoad').addEventListener('click',()=>{
+  const url=spotifyEmbed($('#spLink').value);
+  if(!url){ toast('paste a Spotify track/playlist link'); return; }
+  DB.set('spLast',url); $('#spEmbed').innerHTML=`<iframe style="height:152px" src="${url}" allow="encrypted-media"></iframe>`;
+});
+$('#ytLoad').addEventListener('click',()=>{
+  const val=$('#ytLink').value.trim(); if(!val) return;
+  const url=youtubeEmbed(val);
+  if(url){ DB.set('ytLast',url); $('#ytEmbed').innerHTML=`<iframe style="height:200px" src="${url}" allowfullscreen></iframe>`; }
+  else{ window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(val),'_blank'); toast('searching YouTube…'); }
+});
+
+/* ============================================================
+   READING  (Open Library search + cover shelves — REAL, no key)
+   ============================================================ */
+function loadBooks(){ return DB.get('books', []); }
+function saveBooks(b){ DB.set('books', b); }
+function coverUrl(b,size){ return b.cover ? `https://covers.openlibrary.org/b/id/${b.cover}-${size||'M'}.jpg` : null; }
+function bookCoverEl(b,cls){
+  const url=coverUrl(b,'M');
+  return url
+    ? `<img class="${cls}" src="${url}" alt="" loading="lazy">`
+    : `<div class="rd-noimg ${cls==='rd-cover'?'':'rd-noimg'}">${esc((b.title||'?').slice(0,40))}</div>`;
+}
+const olSearch=(()=>{ // debounced Open Library title/author search
+  let t=null, ctrl=null;
+  return function(q){
+    clearTimeout(t);
+    return new Promise(res=>{
+      t=setTimeout(async()=>{
+        try{
+          if(ctrl) ctrl.abort(); ctrl=new AbortController();
+          const r=await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=7&fields=key,title,author_name,cover_i,first_publish_year`,{signal:ctrl.signal});
+          const j=await r.json();
+          res((j.docs||[]).map(d=>({key:d.key,title:d.title,author:(d.author_name||[])[0]||'',cover:d.cover_i||null,year:d.first_publish_year||''})));
+        }catch(_){ res(null); }
+      },300);
+    });
+  };
+})();
+function renderResults(list){
+  const box=$('#rdResults');
+  if(list===null){ box.innerHTML='<div class="rd-loading">couldn’t reach the library — check connection ✦</div>'; box.classList.add('open'); return; }
+  if(!list.length){ box.classList.remove('open'); box.innerHTML=''; return; }
+  box.innerHTML=list.map((b,i)=>{
+    const img=b.cover?`<img src="https://covers.openlibrary.org/b/id/${b.cover}-S.jpg" alt="">`:`<div class="rd-noimg">📖</div>`;
+    return `<div class="rd-res" data-i="${i}">${img}<div class="rd-meta"><div class="rd-t">${esc(b.title)}</div><div class="rd-a">${esc(b.author)}${b.year?' · '+b.year:''}</div></div><div class="rd-add">＋</div></div>`;
+  }).join('');
+  box.classList.add('open');
+  box.querySelectorAll('.rd-res').forEach(el=>el.addEventListener('click',()=>{
+    addBook(list[Number(el.dataset.i)]); box.classList.remove('open'); $('#rdSearch').value=''; toast('added to your list ✦');
+  }));
+}
+function addBook(b){
+  const books=loadBooks();
+  if(books.some(x=>x.key===b.key)){ toast('already on your list'); return; }
+  books.push({id:uid(),key:b.key,title:b.title,author:b.author,cover:b.cover,year:b.year,status:'want',added:now(),formats:{}});
+  saveBooks(books); renderReading(); recommend();
+}
+function bookHTML(b){
+  const url=coverUrl(b,'M');
+  const cover=url?`<img class="rd-cover" src="${url}" alt="" loading="lazy">`:`<div class="rd-noimg">${esc(b.title)}</div>`;
+  const check=b.status==='finished'?'<div class="rd-check">✓</div>':'';
+  return `<div class="rd-book ${b.status==='finished'?'done':''}" data-id="${b.id}"><div class="rd-coverwrap">${cover}${check}</div><div class="rd-bt">${esc(b.title)}</div></div>`;
+}
+function fillShelf(sel,books){
+  const el=$(sel); el.innerHTML=books.map(bookHTML).join('');
+  el.querySelectorAll('.rd-book').forEach(bk=>bk.addEventListener('click',()=>openBook(bk.dataset.id)));
+}
+function renderReading(){
+  const books=loadBooks();
+  const reading=books.filter(b=>b.status==='reading');
+  const want=books.filter(b=>b.status==='want');
+  const done=books.filter(b=>b.status==='finished');
+  $('#rdReadingNow').hidden=!reading.length; if(reading.length) fillShelf('#rdShelfReading',reading);
+  $('#rdWantCount').textContent=want.length?`(${want.length})`:'';
+  $('#rdShelfWant').innerHTML = want.length?'':'<div class="rd-empty">search a title above to start your list ✦</div>';
+  if(want.length) fillShelf('#rdShelfWant',want);
+  $('#rdFinishedSec').hidden=!done.length; if(done.length) fillShelf('#rdShelfDone',done);
+}
+// recommendations: more from the authors she's saved (Open Library)
+let recDone=false;
+function recommend(){
+  const books=loadBooks(); if(!books.length){ $('#rdRecSec').hidden=true; return; }
+  const authors=[...new Set(books.map(b=>b.author).filter(Boolean))].slice(0,2);
+  if(!authors.length) return;
+  const have=new Set(books.map(b=>b.key));
+  Promise.all(authors.map(a=>fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(a)}&limit=8&fields=key,title,author_name,cover_i`).then(r=>r.json()).catch(()=>null)))
+    .then(rs=>{
+      const recs=[];
+      (rs||[]).forEach(j=>{ if(!j) return; (j.docs||[]).forEach(d=>{ if(d.cover_i && !have.has(d.key) && !recs.some(x=>x.key===d.key)) recs.push({id:'rec',key:d.key,title:d.title,author:(d.author_name||[])[0]||'',cover:d.cover_i}); }); });
+      const show=recs.slice(0,10);
+      if(!show.length){ $('#rdRecSec').hidden=true; return; }
+      $('#rdRecSec').hidden=false;
+      const el=$('#rdShelfRec'); el.innerHTML=show.map(bookHTML).join('');
+      el.querySelectorAll('.rd-book').forEach((bk,i)=>bk.addEventListener('click',()=>{ addBook(show[i]); toast('added to your list ✦'); }));
+    });
+}
+// book detail sheet: status, external sources, formats, buy
+function openBook(id){
+  const books=loadBooks(); const b=books.find(x=>x.id===id); if(!b) return;
+  const q=encodeURIComponent(b.title+' '+b.author);
+  const url=coverUrl(b,'L');
+  const cover=url?`<img class="bk-cover" src="${url}" alt="">`:`<div class="rd-noimg">${esc(b.title)}</div>`;
+  openSheet(`
+    <div class="bk-head">
+      ${cover}
+      <div class="bk-info">
+        <div class="bk-t">${esc(b.title)}</div>
+        <div class="bk-a">${esc(b.author||'')}${b.year?' · '+b.year:''}</div>
+        <div class="bk-status" id="bkStatus">
+          <button data-s="want" class="${b.status==='want'?'on':''}">want</button>
+          <button data-s="reading" class="${b.status==='reading'?'on':''}">reading</button>
+          <button data-s="finished" class="${b.status==='finished'?'on':''}">finished</button>
+        </div>
+      </div>
+    </div>
+    <div class="bk-desc" id="bkDesc">…</div>
+    ${b.formats&&(b.formats.epub||b.formats.audio)?`<div class="bk-files">attached: ${[b.formats.epub&&'📖 '+esc(b.formats.epub),b.formats.audio&&'🔊 '+esc(b.formats.audio)].filter(Boolean).join(' · ')}</div>`:''}
+    <div class="bk-actions">
+      <button class="bk-act" data-open="https://openlibrary.org${b.key}"><span class="s-ico">📖</span> read / details</button>
+      <button class="bk-act" data-open="https://www.gutenberg.org/ebooks/search/?query=${q}"><span class="s-ico">🆓</span> free (Gutenberg)</button>
+      <button class="bk-act" data-open="https://libbyapp.com/search/query-${q}/page-1"><span class="s-ico">📚</span> Libby</button>
+      <button class="bk-act" data-open="https://librivox.org/search?q=${q}&search_form=advanced"><span class="s-ico">🔊</span> free audio</button>
+      <button class="bk-act" data-open="https://www.audible.com/search?keywords=${q}"><span class="s-ico">🎧</span> Audible</button>
+      <button class="bk-act" data-open="https://openlibrary.org/search?author=${encodeURIComponent(b.author||'')}"><span class="s-ico">✍️</span> more by author</button>
+      <button class="bk-act" data-open="https://bookshop.org/beta-search?keywords=${q}"><span class="s-ico">🛒</span> Bookshop</button>
+      <button class="bk-act" data-open="https://www.amazon.com/s?k=${q}&i=stripbooks"><span class="s-ico">🛒</span> Amazon</button>
+      <button class="bk-act wide" data-open="https://www.goodreads.com/search?q=${q}"><span class="s-ico">📒</span> find on Goodreads</button>
+      <button class="bk-act wide" id="bkEpub"><span class="s-ico">⬆️</span> ${b.formats&&b.formats.epub?'continue reading':'attach an ePub'}</button>
+      <button class="bk-act wide" id="bkAudio"><span class="s-ico">⬆️</span> ${b.formats&&b.formats.audio?'continue listening':'attach an audiobook'}</button>
+    </div>
+    <button class="bk-remove" id="bkRemove">remove from list</button>
+  `);
+  // description (lazy from Open Library work)
+  fetch(`https://openlibrary.org${b.key}.json`).then(r=>r.json()).then(j=>{
+    let d=j.description; if(d&&typeof d==='object') d=d.value;
+    $('#bkDesc').textContent=d?String(d).split('\n')[0].slice(0,400):'no description on file.';
+  }).catch(()=>{ if($('#bkDesc')) $('#bkDesc').textContent=''; });
+  $('#bkStatus').querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
+    const arr=loadBooks(); const it=arr.find(x=>x.id===id); it.status=btn.dataset.s;
+    if(btn.dataset.s==='finished') it.finished=now();
+    saveBooks(arr); $('#bkStatus').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===btn));
+    renderReading(); toast(btn.dataset.s==='finished'?'nice work ✦':'updated');
+  }));
+  $$('.bk-act[data-open]').forEach(btn=>btn.addEventListener('click',()=>window.open(btn.dataset.open,'_blank')));
+  $('#bkEpub').addEventListener('click',()=>attachFormat(id,'epub'));
+  $('#bkAudio').addEventListener('click',()=>attachFormat(id,'audio'));
+  $('#bkRemove').addEventListener('click',()=>{ saveBooks(loadBooks().filter(x=>x.id!==id)); closeSheet(); renderReading(); toast('removed'); });
+}
+// attach / open an uploaded format (epub opens in a tab, audio plays)
+let pendingFormat=null;
+function attachFormat(id,kind){
+  const b=loadBooks().find(x=>x.id===id);
+  if(b && b.formats && b.formats[kind+'Url']){   // already attached this session → open it
+    window.open(b.formats[kind+'Url'],'_blank'); return;
+  }
+  pendingFormat={id,kind};
+  $(kind==='epub'?'#epubFile':'#audioFile').click();
+}
+function onFormatPicked(kind,file){
+  if(!pendingFormat||!file) return;
+  const {id}=pendingFormat; pendingFormat=null;
+  const arr=loadBooks(); const b=arr.find(x=>x.id===id); if(!b) return;
+  b.formats=b.formats||{};
+  b.formats[kind]=file.name;
+  b.formats[kind+'Url']=URL.createObjectURL(file);   // session-only handle
+  if(b.status==='want') b.status='reading';
+  saveBooks(arr); renderReading();
+  toast(kind==='epub'?'ePub attached ✦':'audiobook attached ✦');
+  openBook(id);   // refresh detail
+}
+$('#epubFile').addEventListener('change',e=>{ const f=e.target.files[0]; onFormatPicked('epub',f); e.target.value=''; });
+$('#audioFile').addEventListener('change',e=>{ const f=e.target.files[0]; onFormatPicked('audio',f); e.target.value=''; });
+/* ---- Goodreads: deep-link integration (no public API since 2020) ---- */
+function loadGr(){ return DB.get('goodreads',null); }
+function updateGrBar(){ const g=loadGr(); $('#grTxt').textContent=g?'your Goodreads ✦':'connect Goodreads'; }
+function grShelf(shelf){ const g=loadGr(); return (g&&g.id)?`https://www.goodreads.com/review/list/${g.id}?shelf=${shelf}`:'https://www.goodreads.com/'; }
+function openGoodreads(){
+  const g=loadGr();
+  openSheet(`
+    <h3>Goodreads</h3>
+    <div class="set-sub">Goodreads shut down its public API, so this links you straight into Goodreads in your browser (where you're signed in) — your shelves live there.</div>
+    <div class="set-list">
+      ${g?`<button class="set-btn" data-open="${g.profile}"><span class="s-ico">👤</span> my profile</button>`:''}
+      ${g&&g.id?`<button class="set-btn" data-open="${grShelf('to-read')}"><span class="s-ico">📚</span> want-to-read shelf</button>
+                 <button class="set-btn" data-open="${grShelf('currently-reading')}"><span class="s-ico">📖</span> currently reading</button>`:''}
+      <button class="set-btn" data-open="https://www.goodreads.com/user/sign_in"><span class="s-ico">🔑</span> ${g?'open Goodreads':'sign in to Goodreads'}</button>
+      <button class="set-btn" id="grSet"><span class="s-ico">🔗</span> ${g?'change my profile link':'link my profile'}</button>
+      ${g?`<button class="set-btn" id="grDisc"><span class="s-ico">✕</span> disconnect</button>`:''}
+    </div>
+  `);
+  $$('#sheet .set-btn[data-open]').forEach(b=>b.addEventListener('click',()=>window.open(b.dataset.open,'_blank')));
+  $('#grSet').addEventListener('click',()=>{
+    const v=prompt('paste your Goodreads profile link\n(open Goodreads → your profile → copy the URL)\ne.g. https://www.goodreads.com/user/show/12345-katelynn');
+    if(v && /goodreads\.com/.test(v)){ const id=(v.match(/user\/show\/(\d+)/)||[])[1]||''; DB.set('goodreads',{profile:v.trim(),id}); updateGrBar(); toast('Goodreads linked ✦'); openGoodreads(); }
+    else if(v) toast('that doesn’t look like a Goodreads link');
+  });
+  if($('#grDisc')) $('#grDisc').addEventListener('click',()=>{ DB.set('goodreads',null); updateGrBar(); closeSheet(); toast('disconnected'); });
+}
+
+let readingWired=false;
+function initReading(){
+  if(!readingWired){
+    $('#grBar').addEventListener('click',openGoodreads);
+    const inp=$('#rdSearch');
+    inp.addEventListener('input',async()=>{
+      const q=inp.value.trim();
+      if(q.length<2){ $('#rdResults').classList.remove('open'); return; }
+      $('#rdResults').innerHTML='<div class="rd-loading">searching…</div>'; $('#rdResults').classList.add('open');
+      const res=await olSearch(q);
+      if(inp.value.trim()===q) renderResults(res);
+    });
+    document.addEventListener('click',e=>{ if(!e.target.closest('.rd-search')) $('#rdResults').classList.remove('open'); });
+    readingWired=true;
+  }
+  $('#rdSearch').value=''; $('#rdResults').innerHTML=''; $('#rdResults').classList.remove('open');
+  updateGrBar();
+  renderReading(); recommend();
+}
+
+/* ============================================================
+   GENERIC SHEET
+   ============================================================ */
+function openSheet(html){ $('#sheetBody').innerHTML=html; $('#scrim').classList.add('open'); $('#sheet').classList.add('open'); orb.classList.add('hide'); }
+function closeSheet(){ $('#scrim').classList.remove('open'); $('#sheet').classList.remove('open'); orb.classList.remove('hide'); }
+$('#scrim').addEventListener('click',closeSheet);
+
+/* ============================================================
+   IMPORTANT FILES  (photo → tidy "scanned" PDF, auto-filed in folders)
+   ============================================================ */
+const FILE_FOLDERS=['IDs & personal','medical','financial','insurance','housing','vehicle','work & school','receipts','other'];
+const FOLDER_ICON={'IDs & personal':'🪪','medical':'🩺','financial':'💳','insurance':'🛡️','housing':'🏠','vehicle':'🚗','work & school':'🎓','receipts':'🧾','other':'🗂️'};
+
+// PDFs are too big for localStorage → keep them in IndexedDB
+let _fdb=null;
+function filesDB(){ return new Promise((res,rej)=>{ if(_fdb) return res(_fdb);
+  const r=indexedDB.open('kateFiles',1);
+  r.onupgradeneeded=()=>{ const db=r.result; if(!db.objectStoreNames.contains('docs')){ const s=db.createObjectStore('docs',{keyPath:'id'}); s.createIndex('folder','folder'); } };
+  r.onsuccess=()=>{ _fdb=r.result; res(_fdb); }; r.onerror=()=>rej(r.error); }); }
+function fdbAll(){ return filesDB().then(db=>new Promise(res=>{ const out=[]; db.transaction('docs','readonly').objectStore('docs').openCursor().onsuccess=e=>{ const c=e.target.result; if(c){ out.push(c.value); c.continue(); } else res(out); }; })); }
+function fdbPut(d){ return filesDB().then(db=>new Promise((res,rej)=>{ const t=db.transaction('docs','readwrite'); t.objectStore('docs').put(d); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
+function fdbDel(id){ return filesDB().then(db=>new Promise(res=>{ const t=db.transaction('docs','readwrite'); t.objectStore('docs').delete(id); t.oncomplete=()=>res(); })); }
+function blobToDataUrl(b){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(b); }); }
+
+// snap a photo → clean "scanned" look (grayscale + contrast) → jpeg
+function imageToScan(file){ return new Promise((res,rej)=>{
+  const img=new Image(), url=URL.createObjectURL(file);
+  img.onload=()=>{ const max=1500; let w=img.naturalWidth,h=img.naturalHeight; const sc=Math.min(1,max/Math.max(w,h)); w=Math.round(w*sc); h=Math.round(h*sc);
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
+    ctx.filter='grayscale(1) contrast(1.35) brightness(1.07)'; ctx.drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
+    c.toBlob(b=>{ b.arrayBuffer().then(ab=>res({bytes:new Uint8Array(ab),w,h,blob:b})); },'image/jpeg',0.82); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('bad image')); }; img.src=url; }); }
+
+// real multi-page PDF by embedding the JPEGs directly (DCTDecode) — no library
+function pagesToPdf(pages){
+  const enc=s=>new TextEncoder().encode(s); const chunks=[]; let len=0; const off=[];
+  const push=u8=>{ chunks.push(u8); len+=u8.length; }; const pstr=s=>push(enc(s));
+  pstr('%PDF-1.3\n'); const n=2+pages.length*3; const obj=id=>{ off[id]=len; };
+  obj(1); pstr('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
+  const kids=pages.map((_,p)=>`${3+p*3} 0 R`).join(' ');
+  obj(2); pstr(`2 0 obj\n<</Type/Pages/Kids[${kids}]/Count ${pages.length}>>\nendobj\n`);
+  pages.forEach((pg,p)=>{ const pid=3+p*3,cid=4+p*3,iid=5+p*3; const content=`q ${pg.w} 0 0 ${pg.h} 0 0 cm /Im0 Do Q`;
+    obj(pid); pstr(`${pid} 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pg.w} ${pg.h}]/Resources<</XObject<</Im0 ${iid} 0 R>>>>/Contents ${cid} 0 R>>\nendobj\n`);
+    obj(cid); pstr(`${cid} 0 obj\n<</Length ${content.length}>>\nstream\n${content}\nendstream\nendobj\n`);
+    obj(iid); pstr(`${iid} 0 obj\n<</Type/XObject/Subtype/Image/Width ${pg.w}/Height ${pg.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${pg.bytes.length}>>\nstream\n`);
+    push(pg.bytes); pstr('\nendstream\nendobj\n'); });
+  const xref=len; let x='xref\n0 '+(n+1)+'\n0000000000 65535 f \n';
+  for(let id=1;id<=n;id++) x+=String(off[id]).padStart(10,'0')+' 00000 n \n';
+  pstr(x); pstr(`trailer\n<</Size ${n+1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF`);
+  const out=new Uint8Array(len); let o=0; chunks.forEach(c=>{ out.set(c,o); o+=c.length; });
+  return new Blob([out],{type:'application/pdf'});
+}
+
+// let Claude file + name it (if connected); else null → she picks
+function categorizeDoc(firstBlob){
+  const base=DB.get('backendUrl','');
+  if(!base) return Promise.resolve(null);
+  return blobToDataUrl(firstBlob).then(img=>fetch(base.replace(/\/$/,'')+'/api/categorize-doc',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:img,folders:FILE_FOLDERS})
+  }).then(r=>r.json()).then(j=>({folder:FILE_FOLDERS.includes(j.folder)?j.folder:'other',title:(j.title||'document').slice(0,60)}))).catch(()=>null);
+}
+
+let scanPages=[];   // [{bytes,w,h,blob}]
+function fiShow(view){ ['fiHome','fiFolder','fiScan'].forEach(v=>$('#'+v).classList.toggle('on',v===view)); }
+function startScan(){ scanPages=[]; renderScanPages(); fiShow('fiScan'); $('#fiFile').click(); }
+function renderScanPages(){
+  const box=$('#fiPages');
+  if(!scanPages.length){ box.innerHTML='<div class="fi-empty">no pages yet — tap “add page” to snap one ✦</div>'; $('#fiSave').disabled=true; return; }
+  $('#fiSave').disabled=false;
+  box.innerHTML=scanPages.map((p,i)=>`<div class="fi-page"><img src="${URL.createObjectURL(p.blob)}" alt=""><button class="fi-px" data-i="${i}">×</button><span>page ${i+1}</span></div>`).join('');
+  box.querySelectorAll('.fi-px').forEach(b=>b.addEventListener('click',()=>{ scanPages.splice(+b.dataset.i,1); renderScanPages(); }));
+}
+function onScanFile(e){ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+  imageToScan(f).then(pg=>{ scanPages.push(pg); renderScanPages(); }).catch(()=>toast('couldn’t read that photo')); }
+function saveScan(){
+  if(!scanPages.length) return;
+  const btn=$('#fiSave'); btn.disabled=true; btn.textContent='filing…';
+  const pdf=pagesToPdf(scanPages), thumb=scanPages[0].blob;
+  categorizeDoc(scanPages[0].blob).then(sug=>{ btn.textContent='save document'; fileItSheet(pdf,thumb,sug); });
+}
+function fileItSheet(pdf,thumb,sug){
+  const title=(sug?sug.title:'document'), folder=(sug?sug.folder:'other');
+  openSheet(`<div class="fi-file-sheet">
+    <div class="fis-h">${sug?'filed by Kit ✦ — tweak if you like':'name it & pick a folder'}</div>
+    <input id="fisTitle" class="fis-input" value="${title.replace(/"/g,'&quot;')}" placeholder="document name">
+    <div class="fis-folders">${FILE_FOLDERS.map(f=>`<button class="fis-fold${f===folder?' on':''}" data-f="${f}">${FOLDER_ICON[f]} ${f}</button>`).join('')}</div>
+    <button class="br-pill go" id="fisSave" style="width:100%;margin-top:8px">save to folder</button>
+  </div>`);
+  let pick=folder;
+  $$('.fis-fold').forEach(b=>b.addEventListener('click',()=>{ pick=b.dataset.f; $$('.fis-fold').forEach(x=>x.classList.toggle('on',x===b)); }));
+  $('#fisSave').addEventListener('click',()=>{
+    const doc={id:'d'+Date.now(),title:($('#fisTitle').value.trim()||'document'),folder:pick,created:Date.now(),pages:scanPages.length,pdf,thumb};
+    fdbPut(doc).then(()=>{ scanPages=[]; closeSheet(); fiShow('fiHome'); renderFolders(); toast('saved to '+pick+' ✦'); });
+  });
+}
+function renderFolders(){
+  fdbAll().then(docs=>{
+    const counts={}; docs.forEach(d=>{ counts[d.folder]=(counts[d.folder]||0)+1; });
+    const box=$('#fiFolders');
+    box.innerHTML=FILE_FOLDERS.map(f=>`<button class="fi-folder" data-f="${f}"><span class="ff-ico">${FOLDER_ICON[f]}</span><span class="ff-name">${f}</span><span class="ff-n">${counts[f]||0}</span></button>`).join('');
+    box.querySelectorAll('.fi-folder').forEach(b=>b.addEventListener('click',()=>openFolder(b.dataset.f)));
+  });
+}
+function openFolder(folder){
+  $('#fiFolderTitle').textContent=FOLDER_ICON[folder]+' '+folder;
+  fdbAll().then(all=>{
+    const docs=all.filter(d=>d.folder===folder).sort((a,b)=>b.created-a.created);
+    const box=$('#fiDocs');
+    if(!docs.length){ box.innerHTML='<div class="fi-empty">nothing filed here yet ✦</div>'; }
+    else box.innerHTML=docs.map(d=>`<div class="fi-doc" data-id="${d.id}"><img src="${URL.createObjectURL(d.thumb)}" alt=""><div class="fd-meta"><div class="fd-t">${d.title}</div><div class="fd-s">${d.pages} page${d.pages>1?'s':''} · ${new Date(d.created).toLocaleDateString()}</div></div><button class="fd-open" data-id="${d.id}">open</button><button class="fd-del" data-id="${d.id}">🗑</button></div>`).join('');
+    box.querySelectorAll('.fd-open').forEach(b=>b.addEventListener('click',()=>openDoc(b.dataset.id,docs)));
+    box.querySelectorAll('.fi-doc img').forEach(im=>im.addEventListener('click',()=>openDoc(im.closest('.fi-doc').dataset.id,docs)));
+    box.querySelectorAll('.fd-del').forEach(b=>b.addEventListener('click',()=>{ if(confirm('delete this document?')) fdbDel(b.dataset.id).then(()=>{ openFolder(folder); renderFolders(); }); }));
+    fiShow('fiFolder');
+  });
+}
+function openDoc(id,docs){
+  const d=(docs||[]).find(x=>x.id===id); if(!d) return;
+  const url=URL.createObjectURL(d.pdf);
+  const w=window.open(url,'_blank');
+  if(!w){ const a=document.createElement('a'); a.href=url; a.download=(d.title||'document')+'.pdf'; a.click(); }
+}
+let filesWired=false;
+function initFiles(){
+  if(!filesWired){
+    $('#fiScanBtn').addEventListener('click',startScan);
+    $('#fiAddPage').addEventListener('click',()=>$('#fiFile').click());
+    $('#fiSave').addEventListener('click',saveScan);
+    $('#fiCancel').addEventListener('click',()=>{ scanPages=[]; fiShow('fiHome'); });
+    $('#fiBack').addEventListener('click',()=>{ fiShow('fiHome'); renderFolders(); });
+    $('#fiFile').addEventListener('change',onScanFile);
+    filesWired=true;
+  }
+  fiShow('fiHome'); renderFolders();
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+renderTodos();
+saveTodos();   // persist seeded defaults on first run so peeks/list agree
+rollQuote();
+applyTheme();         // restore tile colours/opacity
+applyTileOrder();     // restore tile arrangement
+applyAllTiles();      // restore tile sizes
+updatePeeks();        // build size-aware tile previews (after sizes applied)
+applyCalm();          // restore calm-mode preference
+renderLlamas();       // build the pixel-art llama sprites
+const APP_VERSION='v33';   // bump alongside the ?v= asset version
+if($('#appVer')) $('#appVer').textContent='Katelynn · '+APP_VERSION;
+$('.phone').classList.add('home-active');
+
+// register the service worker so it installs as an offline-capable PWA
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+
+// dismiss the launch splash once everything's painted
+setTimeout(()=>$('.phone').classList.add('loaded'), 900);
