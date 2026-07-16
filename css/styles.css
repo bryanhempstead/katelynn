@@ -371,6 +371,109 @@ body{
 .mood-chip .mc-gl{font-size:12px}
 
 /* ============================================================
+   DAY RATING  — five monoline faces + evening prompt + catalog
+   ============================================================ */
+/* the five faces (shared: home banner uses white ink, sheet uses olive) */
+.eve-faces{display:flex;gap:6px;margin-top:12px}
+.dayface{flex:1;min-width:0;border:none;background:none;cursor:pointer;color:#fff;
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:2px 0;transition:transform .15s}
+.dayface:active{transform:scale(.9)}
+.dayface svg{width:100%;max-width:44px;height:auto;display:block}
+.dayface .df-bg{transition:fill .2s,stroke .2s}
+.dayface .df-lbl{font-family:var(--sans);font-size:10px;letter-spacing:.02em;opacity:.82}
+.dayface.on .df-lbl{opacity:1;font-weight:600}
+.dayface.on .df-bg{fill:var(--tone);stroke:rgba(255,255,255,.92)}
+.dayface.on .df-eye{fill:#fff}
+.dayface.on .df-mouth{stroke:#fff}
+.sheet-faces .dayface{color:var(--olive)}
+.sheet-faces .dayface .df-lbl{opacity:.7}
+
+/* evening "how was today?" banner (collapses/melts away) */
+.eve-banner{position:relative;flex:0 0 auto;overflow:hidden;max-height:0;opacity:0;transform:translateY(-6px);
+  padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;border-width:0;
+  transition:max-height .5s ease,opacity .4s ease,transform .4s ease,padding .4s ease,margin .4s ease,border-width .4s ease}
+.eve-banner.show{max-height:230px;opacity:1;transform:none;padding:18px 20px;margin:8px 2px;border-width:1px}
+.eve-x{position:absolute;top:10px;right:12px;border:none;background:none;cursor:pointer;
+  color:#fff;opacity:.7;font-size:15px;line-height:1;padding:4px}
+.eve-x:active{transform:scale(.85)}
+.eve-q{font-family:var(--serif-2);font-style:italic;font-size:21px;color:#fff;text-shadow:0 1px 8px rgba(40,44,36,.35)}
+.eve-star{opacity:.85}
+.eve-thanks{display:none;font-family:var(--serif);font-style:italic;font-size:18px;color:#fff;
+  text-align:center;padding:10px 0;text-shadow:0 1px 8px rgba(40,44,36,.3)}
+.eve-banner.thanked .eve-faces,.eve-banner.thanked .eve-q,.eve-banner.thanked .eve-x{display:none}
+.eve-banner.thanked .eve-thanks{display:block}
+
+/* "rate your day" row inside the mood sheet */
+.day-rate-block{margin-top:18px;padding-top:16px;border-top:1px solid rgba(var(--olive-rgb),.16)}
+.dr-h{font-family:var(--serif);font-size:17px;color:var(--olive-2);text-align:center;margin-bottom:6px}
+
+/* streak cards */
+.ins-streak{margin:8px 2px 4px}
+.strk-row{display:flex;gap:12px}
+.strk{flex:1;background:rgba(255,255,255,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.5);border-radius:20px;padding:14px;text-align:center;
+  box-shadow:0 10px 24px rgba(var(--olive-rgb),.12)}
+.strk-n{font-family:var(--serif-2);font-weight:600;font-size:40px;line-height:1;color:var(--olive)}
+.strk-l{font-family:var(--sans);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--olive-2);margin-top:4px}
+.strk-kind{font-family:var(--serif);font-style:italic;font-size:15.5px;color:var(--olive-2);text-align:center;margin-top:10px;line-height:1.4}
+.strk-empty{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--olive-2);text-align:center;padding:16px;line-height:1.5}
+
+/* month calendar */
+.ins-cal{position:relative;background:rgba(255,255,255,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.5);border-radius:22px;padding:14px 14px 16px;margin:12px 2px;
+  box-shadow:0 10px 26px rgba(var(--olive-rgb),.12)}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-title{font-family:var(--serif-2);font-style:italic;font-size:20px;color:var(--olive)}
+.cal-nav{width:34px;height:34px;border:none;border-radius:50%;cursor:pointer;background:rgba(255,255,255,.7);
+  color:var(--olive);font-size:18px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 10px rgba(var(--olive-rgb),.14)}
+.cal-nav:active{transform:scale(.9)}
+.cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.cal-dows span{text-align:center;font-family:var(--sans);font-size:10px;letter-spacing:.04em;color:var(--olive-2);opacity:.7}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-cell{aspect-ratio:1;border:none;border-radius:50%;cursor:default;background:none;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--sans);font-size:12px;color:var(--olive-2);
+  box-shadow:inset 0 0 0 1.5px rgba(var(--olive-rgb),.16)}
+.cal-cell.blank{box-shadow:none}
+.cal-cell.has{color:#fff;font-weight:600;cursor:pointer;background:var(--tone);
+  box-shadow:0 4px 12px rgba(var(--olive-rgb),.2), inset 0 2px 6px rgba(255,255,255,.25)}
+.cal-cell.has:active{transform:scale(.9)}
+.cal-cell.today{outline:2px solid var(--olive);outline-offset:1px}
+
+/* day popover on the calendar */
+.cal-pop{position:absolute;z-index:10;min-width:132px;max-width:200px;pointer-events:none;
+  background:rgba(63,62,54,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-radius:16px;padding:11px 13px;opacity:0;transform:translateY(4px) scale(.96);transition:.18s;
+  box-shadow:0 14px 30px rgba(0,0,0,.3)}
+.cal-pop.show{opacity:1;transform:none}
+.cp-top{display:flex;align-items:center;gap:10px}
+.cp-face{flex:0 0 auto;width:30px;height:30px}
+.cp-face svg{width:30px;height:30px;display:block}
+.cp-day{font-family:var(--sans);font-size:12px;font-weight:600;color:#fff}
+.cp-rate{font-family:var(--serif);font-style:italic;font-size:13px;color:rgba(255,255,255,.8)}
+.cp-feels{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.cp-feel{font-family:var(--sans);font-size:10px;font-weight:600;color:#fff;border-radius:10px;padding:2px 7px}
+.cp-note{font-family:var(--serif);font-style:italic;font-size:13px;color:rgba(255,255,255,.85);margin-top:7px;line-height:1.4}
+
+/* 30-day trend sparkline */
+.ins-trend{background:rgba(255,255,255,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.5);border-radius:22px;padding:14px 16px 12px;margin:12px 2px;
+  box-shadow:0 10px 26px rgba(var(--olive-rgb),.12)}
+.trend-h{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--olive-2);margin-bottom:10px}
+.trend-svg{width:100%;height:84px;display:block;overflow:visible}
+.trend-empty{font-family:var(--serif);font-style:italic;font-size:15.5px;color:var(--olive-2);text-align:center;padding:10px 6px;line-height:1.5}
+
+/* small section label between the day catalog and the mood weather */
+.ins-sec-label{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--olive-2);opacity:.75;padding:16px 6px 2px;text-align:center}
+
+/* settings toggle with an honest sub-label */
+.set-btn.set-stack{align-items:flex-start}
+.s-stack{display:flex;flex-direction:column;gap:2px;text-align:left;min-width:0}
+.s-stack small{font-family:var(--sans);font-size:10.5px;line-height:1.3;color:var(--olive-2);opacity:.78;font-weight:400}
+
+/* ============================================================
    LIFE — segmented control + panels
    ============================================================ */
 .seg{display:flex;gap:6px;background:rgba(255,255,255,.45);border-radius:22px;padding:5px;margin:6px 0 16px;

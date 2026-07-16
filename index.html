@@ -8,13 +8,13 @@
 <meta name="apple-mobile-web-app-title" content="Katelynn">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e9e5d9">
-<link rel="manifest" href="manifest.json?v=52">
+<link rel="manifest" href="manifest.json?v=53">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <title>Katelynn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=52">
+<link rel="stylesheet" href="css/styles.css?v=53">
 </head>
 <body>
 <div class="phone">
@@ -81,6 +81,14 @@
         <button class="dc-cta" id="dcCta">open life ›</button>
       </div>
 
+      <!-- evening "how was today?" prompt (surfaces only after 6pm if unrated) -->
+      <div class="glass-card eve-banner" id="eveBanner">
+        <button class="eve-x" id="eveX" aria-label="not now">✕</button>
+        <div class="eve-q">how was today? <span class="eve-star">✦</span></div>
+        <div class="eve-faces" id="eveFaces"></div>
+        <div class="eve-thanks" id="eveThanks">thank you for checking in ✦</div>
+      </div>
+
       <!-- mood check-in row -->
       <button class="glass-row mood-row" id="moodRow">
         <span class="mr-txt">how are you feeling today?</span>
@@ -108,6 +116,14 @@
       <div class="ins-pct" id="insPct">—</div>
       <div class="ins-word" id="insWord">your patterns will grow here</div>
     </div>
+
+    <!-- evening day-rating catalog -->
+    <div class="ins-streak" id="insStreak"></div>
+    <div class="ins-cal" id="insCal"></div>
+    <div class="ins-trend" id="insTrend"></div>
+    <div class="ins-analysis" id="insDayAnalysis"></div>
+
+    <div class="ins-sec-label" id="insMoodLabel">how you've felt</div>
     <div class="bubble-wrap" id="bubbleWrap"></div>
     <div class="ins-analysis" id="insAnalysis"></div>
     <button class="pill primary wide" id="insBreathe">find a quiet minute ›</button>
@@ -489,6 +505,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="js/app.js?v=52"></script>
+<script src="js/app.js?v=53"></script>
 </body>
 </html>

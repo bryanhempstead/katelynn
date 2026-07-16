@@ -16,6 +16,13 @@ const $  = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const now = ()=>Date.now();
 const uid = ()=>Math.random().toString(36).slice(2,9);
+const pad2 = n=>String(n).padStart(2,'0');
+// local calendar-day string 'YYYY-MM-DD' (local, so an evening rating files under today)
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+// shift a 'YYYY-MM-DD' by n days (local-safe; handles month/year rollover)
+function addDays(s,n){ const [y,m,d]=s.split('-').map(Number); const dt=new Date(y,m-1,d+n); return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`; }
+// current hour — a bare fn so tests can override window.currentHour() without shipping a debug seam
+function currentHour(){ return new Date().getHours(); }
 
 /* ---------- toast ---------- */
 let toastT=null;
@@ -554,10 +561,18 @@ function renderHome(){   // (kept the name updatePeeks callers use via alias bel
     if(mr) mr.textContent='check in';
   }
 
-  // insight teaser
+  // insight teaser — prefer the evening streak if there is one, else mood weather
   const ins=moodSummary();
-  if($('#irTxt')) $('#irTxt').textContent = ins.total ? `${ins.word} · see your patterns` : 'check in a few days to see patterns';
+  const {current}=computeStreaks();
+  if($('#irTxt')){
+    if(current>0) $('#irTxt').textContent=`✦ ${current}-evening streak · see your patterns`;
+    else if(ins.total) $('#irTxt').textContent=`${ins.word} · see your patterns`;
+    else $('#irTxt').textContent='check in a few days to see patterns';
+  }
   if($('#irDot')) $('#irDot').style.background = ins.tone || 'var(--teal)';
+
+  // gentle evening "how was today?" banner (only after 6pm, once per day)
+  refreshEvePrompt();
 }
 // keep existing callers (saveTodos / saveEvents) working
 function updatePeeks(){ renderHome(); }
@@ -665,11 +680,23 @@ function openMoodSheet(){
     </div>
     <input class="mood-note" id="moodNote" placeholder="anything on your mind? (optional)" value="${today?esc(today.note||''):''}">
     <button class="btn-save" id="moodSave">save how i feel</button>
+    <div class="day-rate-block">
+      <div class="dr-h">and how was today, overall?</div>
+      <div class="eve-faces sheet-faces" id="sheetFaces">${faceRow(dayForDate(todayStr())?dayForDate(todayStr()).rating:0)}</div>
+    </div>
   `);
   if(today){ moodPick=today.feeling; }
   $$('.mood-opt').forEach(b=>b.addEventListener('click',()=>{
     moodPick=b.dataset.f; $$('.mood-opt').forEach(x=>x.classList.toggle('on',x===b));
   }));
+  $('#sheetFaces').addEventListener('click',e=>{
+    const b=e.target.closest('.dayface'); if(!b) return;
+    rateDay(b.dataset.rate);
+    $$('#sheetFaces .dayface').forEach(x=>x.classList.toggle('on',x===b));
+    const f=dayFace(Number(b.dataset.rate));
+    toast(`today: ${f.label} ✦`);
+    renderHome();
+  });
   $('#moodSave').addEventListener('click',()=>{
     if(!moodPick){ toast('pick a feeling first ✦'); return; }
     logMood(moodPick,$('#moodNote').value);
@@ -696,15 +723,274 @@ function moodSummary(){
 }
 
 /* ============================================================
+   DAY RATING  ("how was today?" — kate.days, one per day, latest wins)
+   Five monoline faces, tinted clay → sage-teal.
+   ============================================================ */
+const DAY_FACES=[
+  {r:1,label:'rough',tone:'#c08b6f',mouth:'M13 27 Q20 20.5 27 27',brow:true},
+  {r:2,label:'low',  tone:'#c2a389',mouth:'M13 26 Q20 22.5 27 26'},
+  {r:3,label:'okay', tone:'#b3ad97',mouth:'M13.5 24.5 H26.5'},
+  {r:4,label:'good', tone:'#9bbaa6',mouth:'M13 24 Q20 28 27 24'},
+  {r:5,label:'great',tone:'#7fc4bd',mouth:'M13 23.5 Q20 30 27 23.5'},
+];
+function dayFace(r){ return DAY_FACES[r-1]; }
+function ratingTone(r){ const f=dayFace(r); return f?f.tone:'#b3ad97'; }
+// one monoline face SVG (outline uses currentColor; fills tint when .on via CSS)
+function faceSVG(r){
+  const f=dayFace(r); if(!f) return '';
+  return `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <circle cx="20" cy="20" r="15" class="df-bg" stroke="currentColor" stroke-width="2"/>
+    <circle cx="15" cy="18" r="1.5" class="df-eye" fill="currentColor"/>
+    <circle cx="25" cy="18" r="1.5" class="df-eye" fill="currentColor"/>
+    <path d="${f.mouth}" class="df-mouth" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+// a row of the five faces; `sel` = currently-selected rating (or 0)
+function faceRow(sel){
+  return DAY_FACES.map(f=>
+    `<button class="dayface${sel===f.r?' on':''}" data-rate="${f.r}" style="--tone:${f.tone}">
+       ${faceSVG(f.r)}<span class="df-lbl">${f.label}</span>
+     </button>`).join('');
+}
+function loadDays(){ return DB.get('days',[]); }
+function saveDays(a){ DB.set('days',a); }
+function daysMap(){ const m={}; loadDays().forEach(d=>{ m[d.date]=d; }); return m; }   // later entries overwrite → latest wins
+function dayForDate(date){ return daysMap()[date]||null; }
+function rateDay(rating,date){
+  date=date||todayStr();
+  const a=loadDays().filter(d=>d.date!==date);   // one per day
+  a.push({date,rating:Number(rating),ts:now()});
+  saveDays(a);
+}
+const RATE_WORD={1:'a rough one',2:'a low day',3:'an okay day',4:'a good day',5:'a great day'};
+
+/* ---- evening prompt banner (home) ---- */
+function refreshEvePrompt(){
+  const banner=$('#eveBanner'); if(!banner) return;
+  const wrap=$('#eveFaces'); if(wrap && !wrap.dataset.built){ wrap.innerHTML=faceRow(0); wrap.dataset.built='1'; }
+  const today=todayStr();
+  const show = currentHour()>=18 && !dayForDate(today) && DB.get('dayPromptSeen','')!==today;
+  banner.classList.toggle('show',show);
+  if(!show) banner.classList.remove('thanked');
+}
+function dismissEvePrompt(){
+  DB.set('dayPromptSeen',todayStr());
+  $('#eveBanner').classList.remove('show');
+}
+if($('#eveX')) $('#eveX').addEventListener('click',dismissEvePrompt);
+if($('#eveFaces')) $('#eveFaces').addEventListener('click',e=>{
+  const b=e.target.closest('.dayface'); if(!b) return;
+  rateDay(b.dataset.rate);
+  DB.set('dayPromptSeen',todayStr());
+  $$('#eveFaces .dayface').forEach(x=>x.classList.toggle('on',x===b));
+  const banner=$('#eveBanner'); banner.classList.add('thanked');
+  setTimeout(()=>{ banner.classList.remove('show'); setTimeout(()=>banner.classList.remove('thanked'),400); }, 1400);
+});
+
+/* ---- evening reminder (best-effort local notification) ----
+   A pure web app can't push when fully closed, so this only fires while the app
+   has been opened that day: we schedule a setTimeout for 8pm and re-arm whenever
+   the app becomes visible again. Honest sub-label lives in Settings. */
+let eveTimer=null;
+function armEveReminder(){
+  if(eveTimer){ clearTimeout(eveTimer); eveTimer=null; }
+  if(!DB.get('eveReminder',false)) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const n=new Date(), target=new Date(); target.setHours(20,0,0,0);
+  if(target<=n) return;                       // 8pm already passed today — the home banner covers it
+  eveTimer=setTimeout(()=>{
+    if(DB.get('eveReminder',false) && !dayForDate(todayStr())){
+      try{ new Notification('Katelynn ✦',{body:'how was your day? ✦',tag:'kate-eve'}); }catch(_){}
+    }
+  }, target-n);
+}
+
+/* ---- streak math ---- */
+function computeStreaks(){
+  const m=daysMap(); const dates=Object.keys(m).sort();
+  if(!dates.length) return {current:0,best:0};
+  let best=1,run=1;
+  for(let i=1;i<dates.length;i++){ run=(addDays(dates[i-1],1)===dates[i])?run+1:1; if(run>best)best=run; }
+  // current: count back from today, or from yesterday if today's not rated yet (grace — no guilt mid-day)
+  const today=todayStr();
+  let cursor = m[today] ? today : (m[addDays(today,-1)] ? addDays(today,-1) : null);
+  let cur=0; while(cursor && m[cursor]){ cur++; cursor=addDays(cursor,-1); }
+  return {current:cur,best};
+}
+function renderStreakCard(){
+  const box=$('#insStreak'); if(!box) return;
+  const {current,best}=computeStreaks();
+  const total=loadDays().length;
+  if(!total){
+    box.innerHTML='<div class="strk-empty">rate an evening or two and your streak will bloom here ✦</div>';
+    return;
+  }
+  let kind;
+  if(current>=3) kind=`✦ ${current} evenings in a row — lovely rhythm.`;
+  else if(current>0) kind=`✦ ${current} evening${current>1?'s':''} in a row — a gentle start.`;
+  else kind='no streak today — pick it back up whenever you like, no pressure. ✦';
+  box.innerHTML=`
+    <div class="strk-row">
+      <div class="strk"><div class="strk-n">${current}</div><div class="strk-l">current streak</div></div>
+      <div class="strk"><div class="strk-n">${best}</div><div class="strk-l">best streak</div></div>
+    </div>
+    <div class="strk-kind">${kind}</div>`;
+}
+
+/* ---- month calendar ---- */
+let calCur=null;   // {y,m} being viewed; null → current month
+function calRef(){ if(!calCur){ const d=new Date(); calCur={y:d.getFullYear(),m:d.getMonth()}; } return calCur; }
+function renderCalendar(){
+  const box=$('#insCal'); if(!box) return;
+  const {y,m}=calRef();
+  const first=new Date(y,m,1), start=first.getDay(), days=new Date(y,m+1,0).getDate();
+  const map=daysMap(), today=todayStr();
+  const title=`${['January','February','March','April','May','June','July','August','September','October','November','December'][m]} ${y}`;
+  let cells='';
+  for(let i=0;i<start;i++) cells+='<div class="cal-cell blank"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${pad2(m+1)}-${pad2(d)}`;
+    const rec=map[ds];
+    const cls=['cal-cell'];
+    if(rec) cls.push('has');
+    if(ds===today) cls.push('today');
+    const style=rec?`style="--tone:${ratingTone(rec.rating)}"`:'';
+    cells+=`<button class="${cls.join(' ')}" ${style} data-date="${ds}">${d}</button>`;
+  }
+  box.innerHTML=`
+    <div class="cal-head">
+      <button class="cal-nav" data-cal="-1" aria-label="previous month">‹</button>
+      <div class="cal-title">${title}</div>
+      <button class="cal-nav" data-cal="1" aria-label="next month">›</button>
+    </div>
+    <div class="cal-dows">${['S','M','T','W','T','F','S'].map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+    <div class="cal-pop" id="calPop"></div>`;
+  $$('#insCal .cal-nav').forEach(b=>b.addEventListener('click',()=>{
+    const r=calRef(); let mm=r.m+Number(b.dataset.cal), yy=r.y;
+    if(mm<0){ mm=11; yy--; } if(mm>11){ mm=0; yy++; }
+    calCur={y:yy,m:mm}; renderCalendar();
+  }));
+  $$('#insCal .cal-cell.has').forEach(c=>c.addEventListener('click',()=>showCalPop(c)));
+}
+function showCalPop(cell){
+  const pop=$('#calPop'); if(!pop) return;
+  const date=cell.dataset.date, rec=daysMap()[date];
+  if(!rec){ pop.classList.remove('show'); return; }
+  if(pop.dataset.for===date && pop.classList.contains('show')){ pop.classList.remove('show'); return; }
+  const feels=loadMoods().filter(x=>x.date===date);
+  const f=dayFace(rec.rating);
+  const chips=feels.map(x=>{ const g=FEELING(x.feeling); return g?`<span class="cp-feel" style="background:${g.tone}">${g.glyph} ${g.label}</span>`:''; }).join('');
+  const note=(feels.find(x=>x.note)||{}).note||'';
+  const dnum=new Date(date+'T00:00:00');
+  pop.innerHTML=`
+    <div class="cp-top">
+      <span class="cp-face" style="color:${f.tone}">${faceSVG(rec.rating)}</span>
+      <div><div class="cp-day">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dnum.getDay()]} ${MON[dnum.getMonth()]} ${dnum.getDate()}</div><div class="cp-rate">${RATE_WORD[rec.rating]}</div></div>
+    </div>
+    ${chips?`<div class="cp-feels">${chips}</div>`:''}
+    ${note?`<div class="cp-note">“${esc(note.slice(0,90))}${note.length>90?'…':''}”</div>`:''}`;
+  // position above the tapped cell, clamped inside the calendar
+  const box=$('#insCal').getBoundingClientRect(), cr=cell.getBoundingClientRect();
+  pop.classList.add('show'); pop.dataset.for=date;
+  const w=pop.offsetWidth;
+  let left=cr.left-box.left+cr.width/2-w/2;
+  left=Math.max(4,Math.min(left, box.width-w-4));
+  pop.style.left=left+'px';
+  pop.style.top=(cr.top-box.top-pop.offsetHeight-8)+'px';
+}
+
+/* ---- 30-day trend sparkline (olive line, soft teal fill) ---- */
+function renderTrend(){
+  const box=$('#insTrend'); if(!box) return;
+  const map=daysMap(), today=todayStr();
+  const span=30, W=300, H=84, pad=8;
+  const pts=[];
+  for(let i=0;i<span;i++){
+    const ds=addDays(today,-(span-1-i));
+    if(map[ds]) pts.push({x:i,r:map[ds].rating});
+  }
+  if(pts.length<2){
+    box.innerHTML=`<div class="trend-h">last 30 days</div><div class="trend-empty">a soft line will trace here once you've rated a few evenings ✦</div>`;
+    return;
+  }
+  const px=i=>pad+(i/(span-1))*(W-2*pad);
+  const py=r=>pad+(1-(r-1)/4)*(H-2*pad);
+  const line=pts.map(p=>`${px(p.x).toFixed(1)},${py(p.r).toFixed(1)}`).join(' ');
+  const area=`${px(pts[0].x).toFixed(1)},${(H-pad).toFixed(1)} ${line} ${px(pts[pts.length-1].x).toFixed(1)},${(H-pad).toFixed(1)}`;
+  const dots=pts.map(p=>`<circle cx="${px(p.x).toFixed(1)}" cy="${py(p.r).toFixed(1)}" r="2.4" fill="var(--olive)"/>`).join('');
+  box.innerHTML=`
+    <div class="trend-h">last 30 days · ${pts.length} rated</div>
+    <svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polygon points="${area}" fill="rgba(var(--teal-rgb),.22)"/>
+      <polyline points="${line}" fill="none" stroke="var(--olive)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dots}
+    </svg>`;
+}
+
+/* ---- gentle patterns (local logic only) ---- */
+const DOW_SOFT=['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
+function renderDayAnalysis(){
+  const box=$('#insDayAnalysis'); if(!box) return;
+  const days=loadDays();
+  if(days.length<2){
+    box.innerHTML = days.length
+      ? `<div class="ia-note">one evening logged so far — check in a few more and gentle patterns will show up here. ✦</div>`
+      : '';
+    return;
+  }
+  const lines=[];
+  // 1) softest weekday (needs >=2 samples on that day)
+  const byDow={}; days.forEach(d=>{ const wd=new Date(d.date+'T00:00:00').getDay(); (byDow[wd]=byDow[wd]||[]).push(d.rating); });
+  let softest=null;
+  Object.keys(byDow).forEach(wd=>{ const arr=byDow[wd]; if(arr.length>=2){ const avg=arr.reduce((s,x)=>s+x,0)/arr.length; if(!softest||avg<softest.avg) softest={wd:Number(wd),avg}; } });
+  if(softest) lines.push(`${DOW_SOFT[softest.wd]} tend to be your softest day — worth planning something kind for them. ✦`);
+  // 2) best day this month
+  const {y,m}=(()=>{ const d=new Date(); return {y:d.getFullYear(),m:d.getMonth()}; })();
+  const thisMonth=days.filter(d=>{ const [yy,mm]=d.date.split('-').map(Number); return yy===y && mm===m+1; });
+  if(thisMonth.length){
+    const top=thisMonth.slice().sort((a,b)=>b.rating-a.rating || b.ts-a.ts)[0];
+    if(top.rating>=4){ const dt=new Date(top.date+'T00:00:00'); lines.push(`your brightest day this month was ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()]} the ${dt.getDate()} — ${RATE_WORD[top.rating]}.`); }
+  }
+  // 3) feeling ↔ rating co-occurrence
+  const moods=loadMoods(), overall=days.reduce((s,d)=>s+d.rating,0)/days.length;
+  const feelRate={};
+  moods.forEach(mo=>{ const d=daysMap()[mo.date]; if(d){ (feelRate[mo.feeling]=feelRate[mo.feeling]||[]).push(d.rating); } });
+  let dip=null,lift=null;
+  Object.keys(feelRate).forEach(fid=>{ const arr=feelRate[fid]; if(arr.length>=2){ const avg=arr.reduce((s,x)=>s+x,0)/arr.length;
+    if(avg<=overall-0.5 && (!dip||avg<dip.avg)) dip={fid,avg};
+    if(avg>=overall+0.5 && (!lift||avg>lift.avg)) lift={fid,avg};
+  }});
+  if(dip){ const g=FEELING(dip.fid); if(g) lines.push(`on days you logged “${g.label}”, your ratings dipped a little — be extra gentle with yourself then.`); }
+  else if(lift){ const g=FEELING(lift.fid); if(g) lines.push(`days you felt “${g.label}” tended to rate higher — more of whatever brings that on. ✦`); }
+  if(!lines.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="ia-h">your evenings · patterns</div>${lines.slice(0,3).map(l=>`<div class="ia-line"><span class="ia-dot" style="background:var(--teal)"></span><span>${l}</span></div>`).join('')}`;
+}
+function renderDayInsights(){ renderStreakCard(); renderCalendar(); renderTrend(); renderDayAnalysis(); }
+
+/* ============================================================
    INSIGHTS  (bubble chart of moods + supportive analysis)
    ============================================================ */
 function renderInsights(){
+  renderDayInsights();
+  renderMoodInsights();
+}
+function renderMoodInsights(){
   const s=moodSummary();
-  const wrap=$('#bubbleWrap'), an=$('#insAnalysis');
+  const wrap=$('#bubbleWrap'), an=$('#insAnalysis'), lbl=$('#insMoodLabel');
+  const hasDays=loadDays().length>0;
+  if(lbl) lbl.style.display=s.total?'':'none';
   if(!s.total){
+    if(hasDays){
+      // day ratings exist but no feeling check-ins → let the hero speak to the days
+      const {current}=computeStreaks();
+      $('#insPct').textContent='✦';
+      $('#insWord').textContent = current>0 ? 'your evenings are adding up' : 'your evenings are catalogued below';
+      wrap.innerHTML=''; an.innerHTML=''; return;
+    }
     $('#insPct').textContent='✦';
     $('#insWord').textContent='your patterns will grow here';
-    wrap.innerHTML='<div class="ins-empty">check in for a few days and i\'ll show you the shape of your weeks — no judgement, just patterns. ✦</div>';
+    wrap.innerHTML='<div class="ins-empty">rate your evenings and check in on a feeling — i\'ll show you the shape of your weeks here, no judgement. ✦</div>';
     an.innerHTML=''; return;
   }
   $('#insPct').textContent=s.pct+'%';
@@ -901,6 +1187,7 @@ function openSettings(){
     <div class="set-list">
       <button class="set-btn set-toggle" id="setCalm"><span class="s-ico">☾</span> calm mode <span class="s-val">${calm?'on':'off'}</span></button>
       <button class="set-btn" id="setMood"><span class="s-ico">❁</span> check in on a mood <span class="s-val">how you feel</span></button>
+      <button class="set-btn set-toggle set-stack" id="setEve"><span class="s-ico">◐</span> <span class="s-stack">evening reminder<small>a nudge at 8pm — works when the app has been opened that day</small></span> <span class="s-val">${DB.get('eveReminder',false)?'on':'off'}</span></button>
     </div>
     <div class="set-sub">assistant</div>
     <div class="set-list">
@@ -937,6 +1224,21 @@ function openSettings(){
   $('#setBackup').addEventListener('click',exportBackup);
   $('#setRestore').addEventListener('click',()=>$('#restoreFile').click());
   $('#setCalm').addEventListener('click',()=>{ const v=!DB.get('calm',false); DB.set('calm',v); applyCalm(); $('#setCalm .s-val').textContent=v?'on':'off'; });
+  $('#setEve').addEventListener('click',()=>{
+    const turningOn=!DB.get('eveReminder',false);
+    const finish=on=>{ DB.set('eveReminder',on); const v=$('#setEve .s-val'); if(v) v.textContent=on?'on':'off'; armEveReminder(); };
+    if(turningOn && 'Notification' in window && Notification.permission==='default'){
+      Notification.requestPermission().then(p=>{
+        if(p==='granted'){ finish(true); toast('evening reminder on ✦'); }
+        else{ finish(false); toast('allow notifications to get the nudge'); }
+      });
+      return;
+    }
+    if(turningOn && 'Notification' in window && Notification.permission==='denied'){
+      finish(false); toast('notifications are blocked in your browser settings'); return;
+    }
+    finish(turningOn); toast(turningOn?'evening reminder on ✦':'reminder off');
+  });
   $('#setCode').addEventListener('click',()=>{
     const cur=prompt('current code:'); if(cur!==getCode()){ toast('wrong code'); return; }
     const next=prompt('new 3-digit code:');
@@ -1901,7 +2203,7 @@ function initFiles(){
 /* ============================================================
    BOOT
    ============================================================ */
-const APP_VERSION='v52';   // bump alongside the ?v= asset version
+const APP_VERSION='v53';   // bump alongside the ?v= asset version
 renderTodos();
 saveTodos();   // persist seeded defaults on first run so list/home agree
 rollQuote();
@@ -1912,8 +2214,9 @@ renderLlamas();       // build the llama sprites
 setActiveTab('home');
 
 // keep the time-of-day scene honest if the app stays open across a boundary
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ stopBreath(); } else { applyDaypart(); } });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ stopBreath(); } else { applyDaypart(); refreshEvePrompt(); armEveReminder(); } });
 setInterval(applyDaypart, 15*60*1000);   // and re-check every ~15 min
+armEveReminder();   // schedule the 8pm nudge if enabled (re-armed on every foreground)
 
 // register the service worker so it installs as an offline-capable PWA
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
