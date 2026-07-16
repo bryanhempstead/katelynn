@@ -4,209 +4,178 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Katelynn">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#FDB7C2">
-<link rel="manifest" href="manifest.json?v=15">
+<meta name="theme-color" content="#e9e5d9">
+<link rel="manifest" href="manifest.json?v=52">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <title>Katelynn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500;1,600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=33">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=52">
 </head>
 <body>
 <div class="phone">
 
   <!-- launch splash (fades out once loaded) -->
   <div class="splash" id="splash">
-    <div class="splash-badge">
-      <img class="burst" src="assets/burst.png" alt="">
-      <img class="word" src="assets/katelynn-word-large2.png?v=11" alt="Katelynn">
+    <div class="splash-scene" aria-hidden="true"></div>
+    <div class="splash-inner">
+      <div class="brand-script">Katelynn</div>
+      <div class="brand-tag">take a moment for yourself</div>
     </div>
   </div>
 
-  <!-- purple valley wave behind everything -->
-  <svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none">
-    <path d="M0,58 Q50,76 100,58 V100 H0 Z"></path>
-  </svg>
-
   <!-- ===================== HOME ===================== -->
   <section class="screen" id="home">
-    <div class="badge">
-      <img class="burst" src="assets/burst.png" alt="">
-      <img class="word" src="assets/katelynn-word-large2.png?v=11" alt="Katelynn">
+    <!-- full-bleed CSS-painted serene scene, tone shifts by time of day -->
+    <div class="home-scene" id="homeScene" aria-hidden="true">
+      <div class="sky"></div>
+      <div class="glow"></div>
+      <div class="sun"></div>
+      <div class="hill h3"></div>
+      <div class="hill h2"></div>
+      <div class="tree"></div>
+      <div class="hill h1"></div>
+      <div class="reflect"></div>
+      <div class="mist m1"></div>
+      <div class="mist m2"></div>
+      <div class="birds"><span></span><span></span><span></span></div>
     </div>
 
-    <div class="quote">
-      <div class="q" id="quoteText">you are exactly where you need to be.</div>
-      <button class="tap" id="quoteNext">new quote ✦</button>
-    </div>
+    <div class="home-scroll">
+      <div class="home-top">
+        <div class="badge" id="greetBadge">
+          <div class="greet-line"><span class="greet-ico" id="greetIco">☼</span> <span id="greetTime">good morning</span></div>
+          <div class="greet-name">Katelynn</div>
+          <div class="greet-sub" id="greetSub">how are you doing today?</div>
+        </div>
+        <button class="home-more" id="homeMore" aria-label="more">
+          <span></span><span></span><span></span><span></span>
+        </button>
+      </div>
 
-    <div class="frames" id="frames">
-      <div class="frame help" data-go="panic" data-tile="help">
-        <div class="peek">
-          <span class="help-big">help now</span>
-          <span class="help-sub">tap — i’ll breathe with you ✦</span>
-        </div>
-        <div class="label">help now</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="schedule" data-tile="schedule">
-        <div class="peek" id="peekSchedule">tap to open</div>
-        <div class="label">schedule</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="todo" data-tile="todo">
-        <div class="peek" id="peekTodo">tap to open</div>
-        <div class="label">to.do</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="journal" data-tile="journal">
-        <div class="peek">
-          <svg viewBox="0 0 56 56" width="62" height="62" fill="none" aria-hidden="true">
-            <rect x="14" y="9" width="27" height="38" rx="4" stroke="#7A0E9B" stroke-width="2.6"/>
-            <path d="M14 9v38" stroke="#7A0E9B" stroke-width="2.6"/>
-            <path d="M20 9v38" stroke="#7A0E9B" stroke-width="1.5" opacity=".45"/>
-            <path d="M25 21h11M25 28h11M25 35h7" stroke="#7A0E9B" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>
-            <path d="M44 11l1.2 3.1 3.1 1.2-3.1 1.2L44 21l-1.2-3.1-3.1-1.2 3.1-1.2z" fill="#46A82E"/>
-            <path d="M10.5 38l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z" fill="#C42BFF"/>
-            <path d="M47 42l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="#C42BFF"/>
-          </svg>
-        </div>
-        <div class="label">journal</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="breathe" data-tile="breathe">
-        <div class="peek" id="peekBreathe">
-          <svg viewBox="0 0 56 56" width="60" height="60" fill="none" aria-hidden="true">
-            <g stroke="#7A0E9B" stroke-width="2.3" stroke-linejoin="round">
-              <path d="M28 13c4 9 4 18 0 26-4-8-4-17 0-26Z"/>
-              <path d="M28 39c-6-6-10-12-10-20 6 2 9 8 10 20Z"/>
-              <path d="M28 39c6-6 10-12 10-20-6 2-9 8-10 20Z"/>
-              <path d="M28 40c-8-2-15-6-18-13 7-1 14 3 18 13Z"/>
-              <path d="M28 40c8-2 15-6 18-13-7-1-14 3-18 13Z"/>
-            </g>
-            <path d="M15 45h26" stroke="#7A0E9B" stroke-width="2" stroke-linecap="round" opacity=".45"/>
-            <path d="M45 13l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#46A82E"/>
-            <path d="M11 17l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#C42BFF"/>
-          </svg>
-        </div>
-        <div class="label">breathe</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="music" data-tile="music">
-        <div class="peek">
-          <svg viewBox="0 0 56 56" width="58" height="58" fill="none" aria-hidden="true"
-               stroke="#7A0E9B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M13 34v-6a15 15 0 0 1 30 0v6"/>
-            <path d="M9 35a4 4 0 0 1 4-4h2v15h-2a4 4 0 0 1-4-4z"/>
-            <path d="M47 35a4 4 0 0 0-4-4h-2v15h2a4 4 0 0 0 4-4z"/>
-          </svg>
-        </div>
-        <div class="label">music</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="reading" data-tile="reading">
-        <div class="peek" id="peekReading">
-          <svg viewBox="0 0 56 56" width="58" height="58" fill="none" aria-hidden="true">
-            <g stroke="#7A0E9B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M28 17c-4-2.6-10-3-15-1.5v26c5-1.5 11-1.2 15 1.4 4-2.6 11-2.9 15-1.4v-26c-5-1.5-11-1.1-15 1.5z"/>
-              <path d="M28 17v25.3"/>
-            </g>
-            <path d="M45 13l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#46A82E"/>
-            <path d="M11 16l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#C42BFF"/>
-          </svg>
-        </div>
-        <div class="label">reading</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-      <div class="frame" data-go="files" data-tile="files">
-        <div class="peek" id="peekFiles">
-          <svg viewBox="0 0 56 56" width="58" height="58" fill="none" aria-hidden="true">
-            <g stroke="#7A0E9B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 18a3 3 0 0 1 3-3h9l4 5h16a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3z"/>
-              <path d="M16 25h24"/>
-            </g>
-            <path d="M44 12l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#46A82E"/>
-          </svg>
-        </div>
-        <div class="label">important files</div>
-        <button class="tile-size" aria-label="resize">⤢</button>
-      </div>
-    </div>
+      <button class="sos-pill" id="sosPill">help now</button>
 
-    <div class="app-ver" id="appVer"></div>
-    <div class="home-spacer"></div>
+      <div class="home-hero">
+        <div class="hero-label">today's thoughts</div>
+        <div class="hero-q" id="quoteText">you are exactly where you need to be.</div>
+        <button class="hero-next" id="quoteNext">another ✦</button>
+      </div>
+
+      <!-- "your day" frosted card -->
+      <div class="glass-card day-card" id="dayCard">
+        <button class="home-sounds" id="homeSounds" aria-label="background sounds">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 10v4"/><path d="M8 7.5v9"/><path d="M12 4.5v15"/><path d="M16 7.5v9"/><path d="M20 10v4"/>
+          </svg>
+          <span class="hs-dot"></span>
+        </button>
+        <div class="dc-head">
+          <span class="dc-title">your day</span>
+          <span class="dc-date" id="dcDate"></span>
+        </div>
+        <div class="dc-body" id="dcBody">a gentle day ahead ✦</div>
+        <button class="dc-cta" id="dcCta">open life ›</button>
+      </div>
+
+      <!-- mood check-in row -->
+      <button class="glass-row mood-row" id="moodRow">
+        <span class="mr-txt">how are you feeling today?</span>
+        <span class="mr-btn" id="moodRowBtn">check in</span>
+      </button>
+
+      <!-- insights teaser -->
+      <button class="glass-row insight-row" id="insightRow">
+        <span class="ir-dot" id="irDot"></span>
+        <span class="ir-txt" id="irTxt">see your patterns</span>
+        <span class="ir-go">›</span>
+      </button>
+
+      <div class="home-footer" id="homeFooter"></div>
+    </div>
   </section>
 
-  <!-- ===================== SCHEDULE ===================== -->
-  <section class="screen" id="schedule">
+  <!-- ===================== INSIGHTS ===================== -->
+  <section class="screen flat" id="insights">
     <div class="scr-head">
       <button class="back-btn" data-back>‹</button>
-      <div class="scr-title">schedule</div>
+      <div class="scr-title">insights</div>
     </div>
-    <div class="sched-actions">
-      <button class="pill primary" id="schedUpload">📷 upload schedule</button>
-      <button class="pill ghost" id="schedAdd">＋ add manually</button>
+    <div class="ins-hero">
+      <div class="ins-pct" id="insPct">—</div>
+      <div class="ins-word" id="insWord">your patterns will grow here</div>
     </div>
-    <div id="schedList"></div>
-    <input type="file" id="schedFile" accept="image/*" hidden>
+    <div class="bubble-wrap" id="bubbleWrap"></div>
+    <div class="ins-analysis" id="insAnalysis"></div>
+    <button class="pill primary wide" id="insBreathe">find a quiet minute ›</button>
+    <div class="home-footer"></div>
   </section>
 
-  <!-- ===================== TO-DO ===================== -->
-  <section class="screen" id="todo">
-    <div class="scr-head">
-      <button class="back-btn" data-back>‹</button>
-      <div class="scr-title">to.do</div>
+  <!-- ===================== LIFE (schedule + to-do) ===================== -->
+  <section class="screen" id="life">
+    <div class="scr-head bare">
+      <div class="scr-title">your life</div>
+    </div>
+    <div class="seg" id="lifeSeg">
+      <button class="seg-btn on" data-life="schedule">schedule</button>
+      <button class="seg-btn" data-life="todo">to·do</button>
     </div>
 
-    <div class="todo-cats">
-      <button class="tcat on" data-cat="tasks">tasks</button>
-      <button class="tcat" data-cat="groceries">groceries</button>
-      <button class="tcat" data-cat="household">household</button>
-    </div>
-
-    <!-- tasks -->
-    <div class="todo-cat-panel on" id="catTasks">
-      <div class="todo-list" id="todoList"></div>
-      <div class="todo-add-row">
-        <input class="todo-add" id="todoAdd" type="text" placeholder="＋ add a task…">
+    <!-- schedule panel -->
+    <div class="life-panel on" id="lifeSchedule">
+      <div class="sched-actions">
+        <button class="pill primary" id="schedUpload">⧉ upload schedule</button>
+        <button class="pill ghost" id="schedAdd">＋ add manually</button>
       </div>
-      <div class="hint">tap a star to finish it · long-press a task to clear it</div>
+      <div id="schedList"></div>
+      <input type="file" id="schedFile" accept="image/*" hidden>
     </div>
 
-    <!-- groceries -->
-    <div class="todo-cat-panel" id="catGroceries">
-      <div class="cl-list"></div>
-      <div class="todo-add-row">
-        <select class="cl-sub-select" id="grocSub"></select>
-        <input class="todo-add" id="grocAdd" type="text" placeholder="＋ add grocery…">
+    <!-- to-do panel -->
+    <div class="life-panel" id="lifeTodo">
+      <div class="todo-cats">
+        <button class="tcat on" data-cat="tasks">tasks</button>
+        <button class="tcat" data-cat="groceries">groceries</button>
+        <button class="tcat" data-cat="household">household</button>
       </div>
-      <div class="hint">pick an aisle, then add · tap the star when you’ve got it</div>
-    </div>
-
-    <!-- household -->
-    <div class="todo-cat-panel" id="catHousehold">
-      <div class="cl-list"></div>
-      <div class="todo-add-row">
-        <select class="cl-sub-select" id="houseSub"></select>
-        <input class="todo-add" id="houseAdd" type="text" placeholder="＋ add supply…">
+      <div class="todo-cat-panel on" id="catTasks">
+        <div class="todo-list" id="todoList"></div>
+        <div class="todo-add-row">
+          <input class="todo-add" id="todoAdd" type="text" placeholder="＋ add a task…">
+        </div>
+        <div class="hint">tap a star to finish it · long-press a task to clear it</div>
       </div>
-      <div class="hint">toilet paper, soap, batteries… · tap the star when stocked</div>
+      <div class="todo-cat-panel" id="catGroceries">
+        <div class="cl-list"></div>
+        <div class="todo-add-row">
+          <select class="cl-sub-select" id="grocSub"></select>
+          <input class="todo-add" id="grocAdd" type="text" placeholder="＋ add grocery…">
+        </div>
+        <div class="hint">pick an aisle, then add · tap the star when you’ve got it</div>
+      </div>
+      <div class="todo-cat-panel" id="catHousehold">
+        <div class="cl-list"></div>
+        <div class="todo-add-row">
+          <select class="cl-sub-select" id="houseSub"></select>
+          <input class="todo-add" id="houseAdd" type="text" placeholder="＋ add supply…">
+        </div>
+        <div class="hint">toilet paper, soap, batteries… · tap the star when stocked</div>
+      </div>
     </div>
+    <div class="home-footer"></div>
   </section>
 
   <!-- ===================== JOURNAL ===================== -->
-  <section class="screen" id="journal">
-    <div class="scr-head">
-      <button class="back-btn" data-back>‹</button>
+  <section class="screen flat" id="journal">
+    <div class="scr-head bare">
       <div class="scr-title">journal</div>
     </div>
 
     <div class="lock-pad" id="lockPad">
-      <div class="lock-icon">🔒</div>
+      <div class="lock-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
       <div class="lock-dots">
         <span class="lock-dot"></span><span class="lock-dot"></span><span class="lock-dot"></span>
       </div>
@@ -229,10 +198,9 @@
     </div>
   </section>
 
-  <!-- ===================== BREATHE ===================== -->
-  <section class="screen" id="breathe">
-    <div class="scr-head">
-      <button class="back-btn" data-back>‹</button>
+  <!-- ===================== BREATHE / CALM ===================== -->
+  <section class="screen flat" id="breathe">
+    <div class="scr-head bare">
       <div class="scr-title">breathe</div>
     </div>
 
@@ -246,7 +214,19 @@
     <div class="br-tabs">
       <button class="br-tab on" data-br="breath">breathing</button>
       <button class="br-tab" data-br="ground">grounding</button>
+      <button class="br-tab" data-br="guided">guided</button>
       <button class="br-tab" data-br="res">soothe kit</button>
+    </div>
+
+    <!-- ambient sound bar (Web Audio — no files) -->
+    <div class="ambient-bar" id="ambientBar">
+      <span class="amb-lbl">ambience</span>
+      <button class="amb-chip" data-amb="rain">rain</button>
+      <button class="amb-chip" data-amb="waves">waves</button>
+      <button class="amb-chip" data-amb="wind">wind</button>
+      <button class="amb-chip" data-amb="thunder">thunderstorm</button>
+      <button class="amb-chip" data-amb="white">white noise</button>
+      <button class="amb-chip" data-amb="hush">hush</button>
     </div>
 
     <!-- breathing -->
@@ -270,13 +250,13 @@
         <button class="br-pill go" id="breathStart">start</button>
       </div>
       <button class="voice-row" id="voicePick">
-        <span class="vr-lbl">🎙 voice</span>
+        <span class="vr-lbl">voice</span>
         <span class="vr-cur" id="voiceCur">default</span>
         <span class="vr-caret">▾</span>
       </button>
     </div>
 
-    <button class="breath-voice" id="breathVoiceBtn" title="voice guide">🔊</button>
+    <button class="breath-voice" id="breathVoiceBtn" title="voice guide">♪</button>
     <button class="breath-exit" id="breathExit">✕ exit</button>
 
     <!-- grounding 5-4-3-2-1 -->
@@ -286,16 +266,29 @@
       <div class="breath-controls"><button class="br-pill go" id="groundNext">next</button></div>
     </div>
 
-    <!-- soothe resources -->
-    <div class="br-panel" id="brRes">
-      <div class="res-item"><span class="ri-emoji">🌊</span><div><div class="ri-title">name the wave</div><div class="ri-body">feelings rise and fall like waves. you don't have to fix it — just notice it and let it pass through.</div></div></div>
-      <div class="res-item"><span class="ri-emoji">🧊</span><div><div class="ri-title">cold reset</div><div class="ri-body">hold something cold, or splash cool water on your face. it gently tells your nervous system you're safe.</div></div></div>
-      <div class="res-item"><span class="ri-emoji">🦶</span><div><div class="ri-title">feel your feet</div><div class="ri-body">press both feet into the floor. wiggle your toes. you are here, right now, and that's enough.</div></div></div>
-      <div class="res-item"><span class="ri-emoji">🤍</span><div><div class="ri-title">hand on heart</div><div class="ri-body">place a hand on your chest and take three slow breaths. say: "i'm doing my best, and that's okay."</div></div></div>
-      <div class="res-item"><span class="ri-emoji">📞</span><div><div class="ri-title">reach out</div><div class="ri-body">if it feels heavy, text a friend or call/text 988 (US crisis & support line). you never have to carry it alone.</div></div></div>
+    <!-- guided meditation (spoken body-scan, reuses the drifting orb + TTS voice) -->
+    <div class="br-panel" id="brGuided">
+      <div class="breath-stage">
+        <div class="breath-orb guided-orb" id="guidedOrb">
+          <img class="bshape" src="assets/blob-purple.png" alt="">
+          <img class="bshape" src="assets/blob-blue.png" alt="">
+          <img class="bshape bg-green" src="assets/blob-green.png" alt="">
+        </div>
+      </div>
+      <div class="guided-line" id="guidedLine">a four-minute guided relaxation. find a comfortable place to sit or lie down, then press begin. ✦</div>
+      <div class="breath-controls"><button class="br-pill go" id="guidedStart">begin</button></div>
     </div>
 
-    <!-- little pixel llama strolling along to the breath tempo -->
+    <!-- soothe resources -->
+    <div class="br-panel" id="brRes">
+      <div class="res-item"><span class="ri-emoji">◗</span><div><div class="ri-title">name the wave</div><div class="ri-body">feelings rise and fall like waves. you don't have to fix it — just notice it and let it pass through.</div></div></div>
+      <div class="res-item"><span class="ri-emoji">❄</span><div><div class="ri-title">cold reset</div><div class="ri-body">hold something cold, or splash cool water on your face. it gently tells your nervous system you're safe.</div></div></div>
+      <div class="res-item"><span class="ri-emoji">⌇</span><div><div class="ri-title">feel your feet</div><div class="ri-body">press both feet into the floor. wiggle your toes. you are here, right now, and that's enough.</div></div></div>
+      <div class="res-item"><span class="ri-emoji">♡</span><div><div class="ri-title">hand on heart</div><div class="ri-body">place a hand on your chest and take three slow breaths. say: "i'm doing my best, and that's okay."</div></div></div>
+      <div class="res-item"><span class="ri-emoji">☏</span><div><div class="ri-title">reach out</div><div class="ri-body">if it feels heavy, text a friend or call/text 988 (US crisis & support line). you never have to carry it alone.</div></div></div>
+    </div>
+
+    <!-- little llama strolling along to the breath tempo -->
     <div class="breathe-llama" id="breatheLlama">
       <div class="ll-bob">
         <div class="ll-frame f1" id="llamaF1"></div>
@@ -351,6 +344,7 @@
       <div class="mc-embed" id="ytEmbed"></div>
       <div class="mc-note">paste any video / playlist link, or type words to search YouTube</div>
     </div>
+    <div class="home-footer"></div>
   </section>
 
   <!-- ===================== READING ===================== -->
@@ -390,6 +384,7 @@
       <div class="rd-h">you might like</div>
       <div class="rd-shelf" id="rdShelfRec"></div>
     </div>
+    <div class="home-footer"></div>
   </section>
 
   <!-- ===================== IMPORTANT FILES ===================== -->
@@ -399,7 +394,6 @@
       <div class="scr-title">important files</div>
     </div>
 
-    <!-- folders / home view -->
     <div class="fi-view on" id="fiHome">
       <button class="fi-scan" id="fiScanBtn">
         <span class="fi-cam">⌖</span>
@@ -408,14 +402,12 @@
       <div class="fi-folders" id="fiFolders"></div>
     </div>
 
-    <!-- inside a folder -->
     <div class="fi-view" id="fiFolder">
       <button class="fi-crumb" id="fiBack">‹ all folders</button>
       <div class="fi-folder-title" id="fiFolderTitle"></div>
       <div class="fi-docs" id="fiDocs"></div>
     </div>
 
-    <!-- capture / scan flow -->
     <div class="fi-view" id="fiScan">
       <div class="fi-scan-hint" id="fiScanHint">add each page of the document, then save. ✦</div>
       <div class="fi-pages" id="fiPages"></div>
@@ -426,7 +418,32 @@
       </div>
     </div>
     <input type="file" id="fiFile" accept="image/*" capture="environment" hidden>
+    <div class="home-footer"></div>
   </section>
+
+  <!-- ===================== BOTTOM TAB BAR ===================== -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab on" data-tab="home">
+      <svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5"/><path d="M6 10.5V19h12v-8.5"/></svg>
+      <span>home</span>
+    </button>
+    <button class="tab" data-tab="calm">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.2"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>breathe</span>
+    </button>
+    <button class="tab" data-tab="journal">
+      <svg viewBox="0 0 24 24"><path d="M7 4h9a2 2 0 0 1 2 2v14H8a1.8 1.8 0 0 1-1.8-1.8V5A1 1 0 0 1 7 4Z"/><path d="M6.2 17H18"/></svg>
+      <span>journal</span>
+    </button>
+    <button class="tab" data-tab="life">
+      <svg viewBox="0 0 24 24"><rect x="4.5" y="5.5" width="15" height="14" rx="2.2"/><path d="M4.5 9.5h15M8.5 4v3M15.5 4v3"/></svg>
+      <span>life</span>
+    </button>
+    <button class="tab" data-tab="more">
+      <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
+      <span>more</span>
+    </button>
+  </nav>
 
   <!-- ===================== CHATBOT ORB ===================== -->
   <div class="orb" id="orb" title="ask Kit">
@@ -457,8 +474,7 @@
     </div>
   </div>
 
-  <!-- ===================== EDIT MODE ===================== -->
-  <button class="edit-done" id="editDone">done</button>
+  <!-- hidden file inputs -->
   <input type="file" id="restoreFile" accept="application/json,.json" hidden>
   <input type="file" id="epubFile" accept=".epub,application/epub+zip" hidden>
   <input type="file" id="audioFile" accept="audio/*,.m4b,.mp3,.m4a" hidden>
@@ -473,6 +489,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="js/app.js?v=33"></script>
+<script src="js/app.js?v=52"></script>
 </body>
 </html>

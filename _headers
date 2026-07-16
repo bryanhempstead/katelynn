@@ -1,0 +1,6 @@
+# Never let the CDN serve a stale service worker or shell HTML.
+# This is what guarantees an update on her phone always lands on next open.
+/sw.js
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
