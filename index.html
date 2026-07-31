@@ -8,13 +8,13 @@
 <meta name="apple-mobile-web-app-title" content="Katelynn">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e9e5d9">
-<link rel="manifest" href="manifest.json?v=53">
+<link rel="manifest" href="manifest.json?v=54">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <title>Katelynn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=53">
+<link rel="stylesheet" href="css/styles.css?v=54">
 </head>
 <body>
 <div class="phone">
@@ -403,6 +403,41 @@
     <div class="home-footer"></div>
   </section>
 
+  <!-- ===================== MOVIES ===================== -->
+  <section class="screen" id="movies">
+    <div class="scr-head">
+      <button class="back-btn" data-back>‹</button>
+      <div class="scr-title">movies</div>
+    </div>
+
+    <button class="gr-bar lb" id="lbBar">
+      <span class="gr-logo">▸</span>
+      <span class="gr-txt" id="lbTxt">connect Letterboxd</span>
+      <span class="gr-go">›</span>
+    </button>
+
+    <div class="rd-search">
+      <input id="mvSearch" type="text" placeholder="search a film title…" autocomplete="off">
+      <div class="rd-results" id="mvResults"></div>
+    </div>
+
+    <div class="rd-section">
+      <div class="rd-h">want to watch <span class="rd-count" id="mvWantCount"></span></div>
+      <div class="rd-shelf" id="mvShelfWant"></div>
+    </div>
+
+    <div class="rd-section" id="mvWatchedSec" hidden>
+      <div class="rd-h">watched ✦</div>
+      <div class="rd-shelf" id="mvShelfDone"></div>
+    </div>
+
+    <div class="rd-section" id="mvRecSec" hidden>
+      <div class="rd-h">you might like</div>
+      <div class="rd-shelf" id="mvShelfRec"></div>
+    </div>
+    <div class="home-footer"></div>
+  </section>
+
   <!-- ===================== IMPORTANT FILES ===================== -->
   <section class="screen" id="files">
     <div class="scr-head">
@@ -494,6 +529,7 @@
   <input type="file" id="restoreFile" accept="application/json,.json" hidden>
   <input type="file" id="epubFile" accept=".epub,application/epub+zip" hidden>
   <input type="file" id="audioFile" accept="audio/*,.m4b,.mp3,.m4a" hidden>
+  <input type="file" id="videoFile" accept="video/*,.mp4,.m4v,.mov,.mkv" hidden>
 
   <!-- ===================== GENERIC SHEET ===================== -->
   <div class="sheet-scrim" id="scrim"></div>
@@ -505,6 +541,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="js/app.js?v=53"></script>
+<script src="js/app.js?v=54"></script>
 </body>
 </html>

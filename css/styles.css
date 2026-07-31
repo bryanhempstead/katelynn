@@ -685,6 +685,7 @@ body{
   display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;
   box-shadow:inset 0 0 0 1px rgba(var(--olive-rgb),.1), 0 8px 20px rgba(var(--olive-rgb),.08)}
 .more-tile:active{transform:scale(.98)}
+.more-tile.wide{grid-column:1 / -1}
 .more-tile .mt-ico{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
   background:rgba(var(--teal-rgb),.16);color:var(--olive);font-size:22px}
 .more-tile .mt-name{font-family:var(--serif-2);font-style:italic;font-size:19px;color:var(--olive)}
@@ -906,6 +907,17 @@ body{
 .bk-act .s-ico{font-size:16px}
 .bk-files{font-family:var(--sans);font-size:11px;color:rgba(var(--ink-rgb),.55);text-align:center;margin-top:10px;line-height:1.5}
 .bk-remove{display:block;margin:14px auto 0;background:none;border:none;color:rgba(176,90,78,.85);font-family:var(--sans);font-size:12px;cursor:pointer}
+
+/* ============================================================
+   MOVIES  (shares the reading shelves — .rd-* / .bk-* — so the two
+   screens stay visually identical; only the trimmings differ)
+   ============================================================ */
+.gr-bar.lb{background:#14181C;box-shadow:0 8px 20px rgba(20,24,28,.32)}
+.gr-bar.lb .gr-logo{background:#F4F1EA;color:#00A550;font-family:var(--sans);font-weight:700;font-style:normal;font-size:13px}
+/* posters fill the same 2:3 frame the book covers use */
+.rd-book .rd-cover.poster,.bk-head .bk-cover.poster{object-fit:cover;background:#14181C}
+.mv-facts{font-family:var(--sans);font-size:11px;color:rgba(var(--ink-rgb),.6);margin:2px 0 12px;display:flex;flex-wrap:wrap;gap:6px}
+.mv-facts span{background:rgba(var(--olive-rgb),.12);border-radius:8px;padding:3px 7px}
 
 /* ============================================================
    IMPORTANT FILES

@@ -2,7 +2,7 @@
    Network-first for same-origin so updates always show online;
    falls back to cache when offline. Cross-origin (fonts, Open Library,
    embeds) is left to the network untouched. */
-const CACHE = 'kate-v53';
+const CACHE = 'kate-v54';
 const SHELL = ['./', './index.html'];
 
 self.addEventListener('install', e => {

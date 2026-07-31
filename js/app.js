@@ -36,7 +36,7 @@ function toast(msg){
    ============================================================ */
 // which bottom tab lights up for a given screen
 const SCREEN_TAB={home:'home',breathe:'calm',journal:'journal',life:'life',
-                  music:'more',reading:'more',files:'more',insights:'home'};
+                  music:'more',reading:'more',movies:'more',files:'more',insights:'home'};
 function setActiveTab(id){
   const tab=SCREEN_TAB[id]||'';
   $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
@@ -64,6 +64,7 @@ function go(id){
   if(id==='music') renderMusic();
   if(id==='breathe') initBreathe();
   if(id==='reading') initReading();
+  if(id==='movies') initMovies();
   if(id==='files') initFiles();
   if(id==='insights') renderInsights();
 }
@@ -1046,8 +1047,9 @@ function openMore(){
     <div class="more-grid">
       <button class="more-tile" data-more="files"><span class="mt-ico">⌗</span><span class="mt-name">important files</span><span class="mt-sub">scan &amp; keep documents</span></button>
       <button class="more-tile" data-more="reading"><span class="mt-ico">▤</span><span class="mt-name">reading</span><span class="mt-sub">your book shelves</span></button>
+      <button class="more-tile" data-more="movies"><span class="mt-ico">▸</span><span class="mt-name">movies</span><span class="mt-sub">your watchlist</span></button>
       <button class="more-tile" data-more="music"><span class="mt-ico">♪</span><span class="mt-name">music</span><span class="mt-sub">play something soft</span></button>
-      <button class="more-tile" data-more="settings"><span class="mt-ico">⚙</span><span class="mt-name">settings</span><span class="mt-sub">backup, code &amp; more</span></button>
+      <button class="more-tile wide" data-more="settings"><span class="mt-ico">⚙</span><span class="mt-name">settings</span><span class="mt-sub">backup, code &amp; more</span></button>
     </div>
   `);
   $$('.more-tile').forEach(b=>b.addEventListener('click',()=>{
@@ -2065,6 +2067,284 @@ function initReading(){
 }
 
 /* ============================================================
+   MOVIES  (kate.movies — a watchlist built on the same shelves as reading)
+   Catalog is the iTunes Search API: keyless, no sign-up, CORS-friendly,
+   and it already backs the Apple Music card on the music screen.
+   Nothing is streamed or stored here — a film's sheet links out to
+   wherever she actually watches it, and "attach a video file" is for a
+   copy she already owns (the same deal as attaching an ePub to a book).
+   ============================================================ */
+function loadMovies(){ return DB.get('movies', []); }
+function saveMovies(m){ DB.set('movies', m); }
+// artworkUrl100 ends in /100x100bb.jpg — swap the bounding box for a bigger one
+function posterUrl(m,px){ const n=px||300; return m.art ? m.art.replace(/\/\d+x\d+bb/, `/${n}x${n}bb`) : null; }
+// titles come back with curly or straight apostrophes depending on the field
+const normT = s => String(s||'').toLowerCase().replace(/[’‘']/g,"'").replace(/\s+/g,' ').trim();
+
+/* iTunes answers CORS, but a blocked XHR (extension, strict privacy mode)
+   would kill search silently — its JSONP callback is the fallback. */
+function jsonp(url){
+  return new Promise((res,rej)=>{
+    const cb='kitJsonp'+uid(), s=document.createElement('script');
+    const done=()=>{ clearTimeout(timer); try{ delete window[cb]; }catch(_){ } s.remove(); };
+    const timer=setTimeout(()=>{ done(); rej(new Error('timeout')); },9000);
+    window[cb]=data=>{ done(); res(data); };
+    s.onerror=()=>{ done(); rej(new Error('blocked')); };
+    s.src=url+'&callback='+cb; document.head.appendChild(s);
+  });
+}
+function itunes(url){ return fetch(url).then(r=>r.json()).catch(()=>jsonp(url)); }
+// iTunes files the director under artistName for films
+function mapFilm(r){
+  return { key:String(r.trackId||''), title:r.trackName||'', director:r.artistName||'',
+           year:String(r.releaseDate||'').slice(0,4), art:r.artworkUrl100||'',
+           genre:r.primaryGenreName||'', rated:r.contentAdvisoryRating||'',
+           desc:r.longDescription||r.shortDescription||'',
+           mins:r.trackTimeMillis?Math.round(r.trackTimeMillis/60000):0,
+           apple:r.trackViewUrl||'' };
+}
+function filmSearch(term,extra){
+  return itunes(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=movie&entity=movie&limit=12${extra||''}`)
+    .then(j=>(j.results||[]).map(mapFilm));
+}
+const mvLookup=(()=>{   // debounced title search
+  let t=null;
+  return function(q){
+    clearTimeout(t);
+    return new Promise(res=>{
+      t=setTimeout(()=>{ filmSearch(q).then(l=>res(l.slice(0,8))).catch(()=>res(null)); },300);
+    });
+  };
+})();
+function renderMvResults(list){
+  const box=$('#mvResults');
+  if(list===null){ box.innerHTML='<div class="rd-loading">couldn’t reach the film catalog — check connection ✦</div>'; box.classList.add('open'); return; }
+  if(!list.length){ box.classList.remove('open'); box.innerHTML=''; return; }
+  box.innerHTML=list.map((m,i)=>{
+    const u=posterUrl(m,100);
+    const img=u?`<img src="${esc(u)}" alt="">`:`<div class="rd-noimg">▸</div>`;
+    return `<div class="rd-res" data-i="${i}">${img}<div class="rd-meta"><div class="rd-t">${esc(m.title)}</div><div class="rd-a">${esc(m.director)}${m.year?' · '+esc(m.year):''}</div></div><div class="rd-add">＋</div></div>`;
+  }).join('');
+  box.classList.add('open');
+  box.querySelectorAll('.rd-res').forEach(el=>el.addEventListener('click',()=>{
+    addMovie(list[Number(el.dataset.i)]); box.classList.remove('open'); $('#mvSearch').value='';
+  }));
+}
+function addMovie(m,opts){
+  const quiet=!!(opts&&opts.quiet);
+  const arr=loadMovies();
+  const dupe=arr.some(x=>(x.key&&m.key&&x.key===m.key) || (normT(x.title)===normT(m.title) && (!x.year||!m.year||x.year===m.year)));
+  if(dupe){ if(!quiet) toast('already on your watchlist'); return null; }
+  const rec={id:uid(),key:m.key||'',title:m.title,director:m.director||'',year:m.year||'',
+             art:m.art||'',genre:m.genre||'',rated:m.rated||'',desc:m.desc||'',mins:m.mins||0,
+             apple:m.apple||'',status:'want',added:now(),file:''};
+  arr.push(rec); saveMovies(arr);
+  if(!quiet){ renderMovies(); mvRecommend(); toast('added to your watchlist ✦'); }
+  return rec;
+}
+function movieHTML(m){
+  const u=posterUrl(m,300);
+  const cover=u?`<img class="rd-cover poster" src="${esc(u)}" alt="" loading="lazy">`:`<div class="rd-noimg">${esc(m.title)}</div>`;
+  const check=m.status==='watched'?'<div class="rd-check">✓</div>':'';
+  return `<div class="rd-book ${m.status==='watched'?'done':''}" data-id="${m.id}"><div class="rd-coverwrap">${cover}${check}</div><div class="rd-bt">${esc(m.title)}</div></div>`;
+}
+function fillMvShelf(sel,list){
+  const el=$(sel); el.innerHTML=list.map(movieHTML).join('');
+  el.querySelectorAll('.rd-book').forEach(b=>b.addEventListener('click',()=>openMovie(b.dataset.id)));
+}
+function renderMovies(){
+  const arr=loadMovies();
+  const want=arr.filter(m=>m.status!=='watched');
+  const done=arr.filter(m=>m.status==='watched');
+  $('#mvWantCount').textContent=want.length?`(${want.length})`:'';
+  $('#mvShelfWant').innerHTML = want.length?'':'<div class="rd-empty">search a film above to start your watchlist ✦</div>';
+  if(want.length) fillMvShelf('#mvShelfWant',want);
+  $('#mvWatchedSec').hidden=!done.length; if(done.length) fillMvShelf('#mvShelfDone',done);
+}
+// recommendations: more from the directors already on her list
+let mvRecs=[];
+function mvRecommend(){
+  const arr=loadMovies(); if(!arr.length){ $('#mvRecSec').hidden=true; return; }
+  // newest saves first (reverse before the sort so same-millisecond adds tie-break
+  // to most-recent too) — recommendations should follow what she just added
+  const recent=arr.slice().reverse().sort((a,b)=>(b.added||0)-(a.added||0));
+  const dirs=[...new Set(recent.map(m=>m.director).filter(Boolean))].slice(0,2);
+  if(!dirs.length){ $('#mvRecSec').hidden=true; return; }
+  const have=new Set(arr.map(m=>normT(m.title)));
+  Promise.all(dirs.map(d=>filmSearch(d,'&attribute=directorTerm').catch(()=>[])))
+    .then(sets=>{
+      const recs=[];
+      sets.forEach(list=>(list||[]).forEach(m=>{
+        if(m.art && !have.has(normT(m.title)) && !recs.some(x=>x.key===m.key)) recs.push(Object.assign({},m,{id:'rec'}));
+      }));
+      mvRecs=recs.slice(0,10);
+      if(!mvRecs.length){ $('#mvRecSec').hidden=true; return; }
+      $('#mvRecSec').hidden=false;
+      const el=$('#mvShelfRec'); el.innerHTML=mvRecs.map(movieHTML).join('');
+      el.querySelectorAll('.rd-book').forEach((b,i)=>b.addEventListener('click',()=>addMovie(mvRecs[i])));
+    }).catch(()=>{ $('#mvRecSec').hidden=true; });
+}
+// film sheet: status, facts, where to watch, and her own copy
+function openMovie(id){
+  const m=loadMovies().find(x=>x.id===id); if(!m) return;
+  const q=encodeURIComponent(m.title+(m.year?' '+m.year:''));
+  const dq=encodeURIComponent(m.director||'');
+  const u=posterUrl(m,400);
+  const cover=u?`<img class="bk-cover poster" src="${esc(u)}" alt="">`:`<div class="rd-noimg">${esc(m.title)}</div>`;
+  const facts=[m.year,m.genre,m.rated,m.mins?m.mins+' min':''].filter(Boolean).map(f=>`<span>${esc(f)}</span>`).join('');
+  const mine=videoUrls[id];
+  openSheet(`
+    <div class="bk-head">
+      ${cover}
+      <div class="bk-info">
+        <div class="bk-t">${esc(m.title)}</div>
+        <div class="bk-a">${esc(m.director||'')}</div>
+        <div class="bk-status" id="mvStatus">
+          <button data-s="want" class="${m.status!=='watched'?'on':''}">want to watch</button>
+          <button data-s="watched" class="${m.status==='watched'?'on':''}">watched</button>
+        </div>
+      </div>
+    </div>
+    ${facts?`<div class="mv-facts">${facts}</div>`:''}
+    <div class="bk-desc" id="mvDesc">${m.desc?esc(m.desc):'…'}</div>
+    ${m.file?`<div class="bk-files">your copy: ▸ ${esc(m.file)}</div>`:''}
+    <div class="bk-actions">
+      <button class="bk-act wide" data-open="https://www.justwatch.com/us/search?q=${q}"><span class="s-ico">▸</span> where to watch it</button>
+      <button class="bk-act" data-open="${esc(m.apple||('https://tv.apple.com/search?term='+q))}"><span class="s-ico">◈</span> Apple TV</button>
+      <button class="bk-act" data-open="https://www.amazon.com/s?k=${q}&i=instant-video"><span class="s-ico">▹</span> Prime Video</button>
+      <button class="bk-act" data-open="https://www.netflix.com/search?q=${q}"><span class="s-ico">◼</span> Netflix</button>
+      <button class="bk-act" data-open="https://www.youtube.com/results?search_query=${q}+trailer"><span class="s-ico">▷</span> trailer</button>
+      <button class="bk-act${dq?'':' wide'}" data-open="https://letterboxd.com/search/${q}/"><span class="s-ico">◉</span> Letterboxd</button>
+      ${dq?`<button class="bk-act" data-open="https://letterboxd.com/search/${dq}/"><span class="s-ico">✎</span> more by director</button>`:''}
+      <button class="bk-act wide" id="mvFileBtn"><span class="s-ico">⬆️</span> ${mine?'play your copy':(m.file?'re-attach '+esc(m.file):'attach a video file')}</button>
+    </div>
+    <div class="bk-files">rentals and purchases download for offline inside the Apple TV, Prime Video and Netflix apps themselves ✦</div>
+    <button class="bk-remove" id="mvRemove">remove from watchlist</button>
+  `);
+  // blurb + facts fill in lazily the first time a film's sheet is opened
+  if(!m.desc && m.key){
+    itunes(`https://itunes.apple.com/lookup?id=${encodeURIComponent(m.key)}`).then(j=>{
+      const r=(j.results||[])[0]; if(!r) return;
+      const f=mapFilm(r), arr=loadMovies(), t=arr.find(x=>x.id===id);
+      if(t){ t.desc=f.desc||t.desc; t.genre=t.genre||f.genre; t.rated=t.rated||f.rated;
+             t.mins=t.mins||f.mins; t.apple=t.apple||f.apple; saveMovies(arr); }
+      if($('#mvDesc')) $('#mvDesc').textContent=f.desc||'no description on file.';
+    }).catch(()=>{ if($('#mvDesc')&&$('#mvDesc').textContent==='…') $('#mvDesc').textContent=''; });
+  }
+  $('#mvStatus').querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
+    const arr=loadMovies(), t=arr.find(x=>x.id===id); if(!t) return;
+    t.status=btn.dataset.s; if(t.status==='watched') t.watched=now();
+    saveMovies(arr);
+    $('#mvStatus').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===btn));
+    renderMovies(); toast(t.status==='watched'?'hope it was a good one ✦':'back on the watchlist');
+  }));
+  $$('#sheet .bk-act[data-open]').forEach(b=>b.addEventListener('click',()=>window.open(b.dataset.open,'_blank')));
+  $('#mvFileBtn').addEventListener('click',()=>attachVideo(id));
+  $('#mvRemove').addEventListener('click',()=>{ saveMovies(loadMovies().filter(x=>x.id!==id)); closeSheet(); renderMovies(); mvRecommend(); toast('removed'); });
+}
+/* a film file she owns. The blob handle is session-only (localStorage can't
+   hold a movie), so only the filename persists — after a reload she re-picks it. */
+const videoUrls={};
+let pendingVideo=null;
+function attachVideo(id){
+  if(videoUrls[id]){ window.open(videoUrls[id],'_blank'); return; }
+  pendingVideo=id; $('#videoFile').click();
+}
+function onVideoPicked(e){
+  const f=e.target.files[0]; e.target.value='';
+  if(!pendingVideo||!f) return;
+  const id=pendingVideo; pendingVideo=null;
+  const arr=loadMovies(), m=arr.find(x=>x.id===id); if(!m) return;
+  m.file=f.name; saveMovies(arr);
+  videoUrls[id]=URL.createObjectURL(f);
+  renderMovies(); toast('video attached ✦'); openMovie(id);
+}
+/* ---- Letterboxd: deep-link integration (no public API) ---- */
+function loadLb(){ return DB.get('letterboxd',null); }
+function updateLbBar(){ const g=loadLb(); $('#lbTxt').textContent=g?'your Letterboxd ✦':'connect Letterboxd'; }
+function openLetterboxd(){
+  const g=loadLb();
+  openSheet(`
+    <h3>Letterboxd</h3>
+    <div class="set-sub">Letterboxd has no public API, so this links you straight into it in your browser (where you're signed in) — your diary and lists live there.</div>
+    <div class="set-list">
+      ${g?`<button class="set-btn" data-open="${esc(g.profile)}"><span class="s-ico">👤</span> my profile</button>`:''}
+      ${g&&g.user?`<button class="set-btn" data-open="https://letterboxd.com/${encodeURIComponent(g.user)}/watchlist/"><span class="s-ico">⧉</span> my watchlist</button>
+                   <button class="set-btn" data-open="https://letterboxd.com/${encodeURIComponent(g.user)}/films/diary/"><span class="s-ico">▤</span> my diary</button>`:''}
+      <button class="set-btn" data-open="https://letterboxd.com/sign-in/"><span class="s-ico">🔑</span> ${g?'open Letterboxd':'sign in to Letterboxd'}</button>
+      <button class="set-btn" id="lbSet"><span class="s-ico">🔗</span> ${g?'change my profile link':'link my profile'}</button>
+      ${g?`<button class="set-btn" id="lbDisc"><span class="s-ico">✕</span> disconnect</button>`:''}
+    </div>
+  `);
+  $$('#sheet .set-btn[data-open]').forEach(b=>b.addEventListener('click',()=>window.open(b.dataset.open,'_blank')));
+  $('#lbSet').addEventListener('click',()=>{
+    const v=prompt('paste your Letterboxd profile link\n(open Letterboxd → your profile → copy the URL)\ne.g. https://letterboxd.com/katelynn/');
+    if(v && /letterboxd\.com/.test(v)){
+      const user=(v.match(/letterboxd\.com\/([^\/?#]+)/)||[])[1]||'';
+      DB.set('letterboxd',{profile:v.trim(),user}); updateLbBar(); toast('Letterboxd linked ✦'); openLetterboxd();
+    } else if(v) toast('that doesn’t look like a Letterboxd link');
+  });
+  if($('#lbDisc')) $('#lbDisc').addEventListener('click',()=>{ DB.set('letterboxd',null); updateLbBar(); closeSheet(); toast('disconnected'); });
+}
+/* ---- the three she asked for, waiting on the shelf the first time she
+   opens movies. They go in as stubs so they're there with no signal; the
+   poster, runtime and blurb fill in from the catalog when there is one. ---- */
+const SEED_MOVIES=[
+  {title:"Wayne's World",   year:'1992', director:'Penelope Spheeris'},
+  {title:"Wayne's World 2", year:'1993', director:'Stephen Surjik'},
+  {title:'Old School',      year:'2003', director:'Todd Phillips'},
+];
+function seedMovies(){
+  if(DB.get('moviesSeeded',false)) return [];
+  DB.set('moviesSeeded',true);
+  return SEED_MOVIES.map(s=>addMovie(s,{quiet:true})).filter(Boolean);
+}
+// match a stub against the catalog and fill in what we don't have
+function fillMovie(id){
+  const m=loadMovies().find(x=>x.id===id);
+  if(!m || m.art) return Promise.resolve(false);
+  return filmSearch(m.title).then(hits=>{
+    const want=normT(m.title);
+    const pick = hits.find(h=>normT(h.title)===want && h.year===m.year)
+              || hits.find(h=>normT(h.title)===want)
+              || hits.find(h=>h.year===m.year);
+    if(!pick) return false;
+    const arr=loadMovies(), t=arr.find(x=>x.id===id); if(!t) return false;
+    t.key=pick.key||t.key; t.art=pick.art; t.genre=pick.genre; t.rated=pick.rated;
+    t.desc=pick.desc; t.mins=pick.mins; t.apple=pick.apple;
+    if(!t.director) t.director=pick.director;
+    saveMovies(arr); return true;
+  }).catch(()=>false);
+}
+
+let moviesWired=false;
+function initMovies(){
+  if(!moviesWired){
+    $('#lbBar').addEventListener('click',openLetterboxd);
+    const inp=$('#mvSearch');
+    inp.addEventListener('input',async()=>{
+      const q=inp.value.trim();
+      if(q.length<2){ $('#mvResults').classList.remove('open'); return; }
+      $('#mvResults').innerHTML='<div class="rd-loading">searching…</div>'; $('#mvResults').classList.add('open');
+      const res=await mvLookup(q);
+      if(inp.value.trim()===q) renderMvResults(res);
+    });
+    document.addEventListener('click',e=>{ if(!e.target.closest('.rd-search')) $('#mvResults').classList.remove('open'); });
+    $('#videoFile').addEventListener('change',onVideoPicked);
+    moviesWired=true;
+  }
+  $('#mvSearch').value=''; $('#mvResults').innerHTML=''; $('#mvResults').classList.remove('open');
+  updateLbBar();
+  const fresh=seedMovies();
+  renderMovies();
+  if(fresh.length) toast(`${fresh.length} films added to your watchlist ✦`);
+  // top up anything still missing artwork (seeded stubs, or added offline)
+  const gaps=loadMovies().filter(m=>!m.art).map(m=>fillMovie(m.id));
+  if(gaps.length) Promise.all(gaps).then(rs=>{ if(rs.some(Boolean)) renderMovies(); mvRecommend(); });
+  else mvRecommend();
+}
+
+/* ============================================================
    GENERIC SHEET
    ============================================================ */
 function openSheet(html){ $('#sheetBody').innerHTML=html; $('#scrim').classList.add('open'); $('#sheet').classList.add('open'); orb.classList.add('hide'); $('.phone').classList.add('sheeting'); }
@@ -2203,7 +2483,7 @@ function initFiles(){
 /* ============================================================
    BOOT
    ============================================================ */
-const APP_VERSION='v53';   // bump alongside the ?v= asset version
+const APP_VERSION='v54';   // bump alongside the ?v= asset version
 renderTodos();
 saveTodos();   // persist seeded defaults on first run so list/home agree
 rollQuote();
