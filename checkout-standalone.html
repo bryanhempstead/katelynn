@@ -187,7 +187,6 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
 .barcode i.w{width:4px}
 .barcode i.s{height:70%}
 .r-foot{text-align:center;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--sand);margin-top:12px}
-.r-heart{text-align:center;font-family:var(--serif-2);font-style:italic;font-size:16px;color:var(--olive-2);margin-top:10px}
 
 /* ---------- boom + the page after ---------- */
 #boom{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
@@ -235,7 +234,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
       <div class="card">
         <div class="field">
           <span class="lab">Email</span>
-          <span class="val soft">you@already-know.com</span>
+          <span class="val soft">customer@example.com</span>
         </div>
       </div>
     </section>
@@ -243,7 +242,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
     <section class="sec">
       <div class="sec-head">
         <h2 class="sec-title">Deliver to</h2>
-        <span class="sec-note">recipient</span>
+        <span class="sec-note">step 2 of 3</span>
       </div>
       <div class="card">
         <div class="field">
@@ -260,17 +259,13 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
             <span class="val soft">Friday, 7:00 PM</span>
           </div>
         </div>
-        <div class="field">
-          <span class="lab">Notes</span>
-          <span class="val soft">Wear the thing you like. No substitutions.</span>
-        </div>
       </div>
     </section>
 
     <section class="sec">
       <div class="sec-head">
         <h2 class="sec-title">Payment</h2>
-        <span class="sec-note">all transactions are sincere</span>
+        <span class="sec-note">step 3 of 3</span>
       </div>
       <div class="card">
 
@@ -278,7 +273,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
           <span class="radio" aria-hidden="true"></span>
           <div class="opt-body">
             <div class="opt-title">Dinner and a movie <span class="pill">primary</span></div>
-            <div class="opt-sub">Payable in full on arrival. Dinner first, movie chosen by the recipient. Popcorn is non-negotiable.</div>
+            <div class="opt-sub">Payable in full on arrival.</div>
           </div>
           <div class="opt-amt">Due</div>
         </div>
@@ -287,21 +282,21 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
           <span class="radio" aria-hidden="true"></span>
           <div class="opt-body">
             <div class="opt-title">Secondary payment requirement <span class="pill req">required</span></div>
-            <div class="opt-sub">Settled in cash, transfer, or an equivalently unreasonable gesture.</div>
+            <div class="opt-sub">Settled in cash or bank transfer.</div>
           </div>
           <div class="opt-amt">$600.00</div>
         </div>
 
       </div>
       <p class="fineprint">
-        Both payment requirements must be satisfied. Partial fulfillment does not clear the fine.
-        Refunds are not available; appeals may be filed in person, in a nice outfit.
+        Both payment requirements must be satisfied to complete this order. Partial payment does
+        not clear the outstanding balance. All sales are final.
       </p>
     </section>
 
     <div class="paywrap">
       <button class="pay" id="payBtn" type="button">Complete order</button>
-      <div class="securenote">&#128274; encrypted &#183; non-refundable &#183; legally adorable</div>
+      <div class="securenote">&#128274; Encrypted &#183; All sales final</div>
     </div>
   </div>
 
@@ -324,7 +319,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
       <div class="r-line">
         <div class="grow">
           <div class="r-item">Bad girl fine</div>
-          <div class="r-qty">qty 1 &#183; citation #BGF-001</div>
+          <div class="r-qty">qty 1 &#183; ref #BGF-001</div>
         </div>
         <div class="amt">$600.00</div>
       </div>
@@ -335,7 +330,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
         <span class="amt">incl.</span>
       </div>
       <div class="r-line">
-        <span>Good behavior discount</span>
+        <span>Discount</span>
         <span class="dots" aria-hidden="true"></span>
         <span class="amt">$0.00</span>
       </div>
@@ -348,7 +343,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
         <span class="amt">$600.00</span>
       </div>
       <div class="r-line">
-        <span>Attitude tax</span>
+        <span>Tax</span>
         <span class="dots" aria-hidden="true"></span>
         <span class="amt">$0.00</span>
       </div>
@@ -369,8 +364,7 @@ body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
         <i class="s"></i><i class="w"></i><i></i><i class="s"></i><i></i><i class="w"></i>
         <i></i><i class="w s"></i><i></i><i></i><i class="w"></i><i class="s"></i><i></i>
       </div>
-      <div class="r-foot">thank you for your compliance</div>
-      <div class="r-heart">this fine cannot be appealed</div>
+      <div class="r-foot">thank you for your order</div>
     </div>
   </aside>
 </main>
