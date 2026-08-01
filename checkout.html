@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e9e5d9">
+<title>Checkout · Katelynn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Katelynn — fake checkout mockup
+   Receipt language from the brain app (cream / olive / teal,
+   Playfair italic + Space Grotesk) in a Shopify checkout shell.
+   ============================================================ */
+:root{
+  --cream:#f0ede3;
+  --cream-2:#e9e5d9;
+  --stone:#d6d2c2;
+  --stone-2:#c7c2ae;
+  --sand:#b3ad97;
+  --olive:#6b6858;
+  --olive-2:#7a766a;
+  --ink:#55534a;
+  --ink-rgb:85,83,74;
+  --olive-rgb:107,104,88;
+  --teal:#7fc4bd;
+  --teal-rgb:127,196,189;
+  --dark:#3f3e36;
+
+  --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --serif-2:'Playfair Display', Georgia, serif;
+  --sans:'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%}
+body{
+  font-family:var(--sans);color:var(--ink);
+  background:linear-gradient(180deg,#f3f0e6 0%, #e9e5d9 44%, #dcd8c8 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body.shaking{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{
+  10%,90%{transform:translate(-2px,1px) rotate(-.2deg)}
+  20%,80%{transform:translate(4px,-2px) rotate(.3deg)}
+  30%,50%,70%{transform:translate(-8px,3px) rotate(-.5deg)}
+  40%,60%{transform:translate(8px,-3px) rotate(.5deg)}
+}
+
+/* soft drifting mist, same trick the app uses on flat screens */
+body::before,body::after{content:'';position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(64px)}
+body::before{width:340px;height:340px;left:-80px;top:-40px;opacity:.5;
+  background:radial-gradient(circle,rgba(var(--teal-rgb),.22),transparent 70%);
+  animation:mist-a 42s ease-in-out infinite}
+body::after{width:300px;height:300px;right:-70px;bottom:60px;opacity:.45;
+  background:radial-gradient(circle,rgba(230,226,212,.9),transparent 70%);
+  animation:mist-b 52s ease-in-out infinite}
+@keyframes mist-a{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(34px,44px) scale(1.14)}}
+@keyframes mist-b{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-28px,-36px) scale(1.1)}}
+
+/* ---------- store bar ---------- */
+.storebar{position:relative;z-index:2;border-bottom:1px solid rgba(var(--olive-rgb),.16);
+  background:rgba(255,255,255,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.storebar-in{max-width:1080px;margin:0 auto;padding:22px 26px 18px;
+  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.wordmark{font-family:var(--serif-2);font-style:italic;font-weight:500;font-size:30px;
+  color:var(--olive);letter-spacing:.01em;line-height:1}
+.wordmark-tag{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--olive-2);opacity:.75}
+.crumbs{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:12px;color:var(--sand);letter-spacing:.04em}
+.crumbs .on{color:var(--olive);font-weight:600}
+.crumbs .sep{opacity:.55}
+
+/* ---------- layout ---------- */
+.wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:34px 26px 80px;
+  display:grid;grid-template-columns:1fr 400px;gap:44px;align-items:start}
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr;gap:30px;padding:26px 18px 64px}
+  .receipt-col{order:-1}
+}
+
+/* ---------- form side ---------- */
+.sec{margin-bottom:30px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sec-title{font-family:var(--serif-2);font-style:italic;font-weight:500;font-size:24px;color:var(--olive)}
+.sec-note{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sand)}
+
+.card{background:rgba(255,255,255,.55);border:1px solid rgba(var(--olive-rgb),.14);
+  border-radius:18px;padding:6px;
+  box-shadow:0 8px 24px rgba(var(--olive-rgb),.09), inset 0 1px 0 rgba(255,255,255,.7);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+
+.field{padding:12px 16px;border-bottom:1px solid rgba(var(--olive-rgb),.12)}
+.field:last-child{border-bottom:none}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.field-row .field{border-bottom:1px solid rgba(var(--olive-rgb),.12)}
+.field-row .field:first-child{border-right:1px solid rgba(var(--olive-rgb),.12)}
+.lab{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--sand);margin-bottom:5px}
+.val{font-size:15px;color:var(--ink)}
+.val.soft{color:var(--olive-2)}
+.val.name{font-family:var(--serif-2);font-style:italic;font-size:20px;color:var(--olive)}
+
+/* payment options */
+.opt{display:flex;align-items:flex-start;gap:14px;padding:16px;
+  border-bottom:1px solid rgba(var(--olive-rgb),.12);cursor:default}
+.opt:last-child{border-bottom:none}
+.opt.sel{background:rgba(var(--teal-rgb),.11)}
+.radio{flex:0 0 auto;width:19px;height:19px;margin-top:2px;border-radius:50%;
+  border:1.5px solid rgba(var(--olive-rgb),.42);background:rgba(255,255,255,.75);position:relative}
+.opt.sel .radio{border-color:var(--teal);box-shadow:0 0 0 3px rgba(var(--teal-rgb),.22)}
+.opt.sel .radio::after{content:'';position:absolute;inset:4px;border-radius:50%;background:var(--teal)}
+.opt-body{flex:1 1 auto;min-width:0}
+.opt-title{font-size:15px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.opt-sub{font-size:12.5px;color:var(--olive-2);margin-top:4px;line-height:1.5}
+.opt-amt{flex:0 0 auto;font-size:15px;font-weight:600;color:var(--olive);white-space:nowrap}
+.pill{font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+  background:rgba(var(--olive-rgb),.12);color:var(--olive-2)}
+.pill.req{background:rgba(196,120,110,.16);color:#a8635a}
+
+.fineprint{font-size:11.5px;color:var(--sand);line-height:1.6;margin-top:14px;padding:0 4px}
+
+/* ---------- pay button ---------- */
+.paywrap{position:relative;margin-top:26px}
+.pay{width:100%;border:none;cursor:pointer;font-family:var(--sans);
+  font-size:15px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:#fbfaf5;padding:20px 24px;border-radius:999px;
+  background:linear-gradient(180deg, #6f6c5c 0%, #56543f 100%);
+  box-shadow:0 12px 30px rgba(var(--olive-rgb),.34), inset 0 1px 0 rgba(255,255,255,.22);
+  transition:transform .14s ease, box-shadow .14s ease}
+.pay:hover{transform:translateY(-1px);box-shadow:0 16px 36px rgba(var(--olive-rgb),.4), inset 0 1px 0 rgba(255,255,255,.22)}
+.pay:active{transform:scale(.985)}
+.pay.blown{transform:scale(1.5);opacity:0;transition:transform .32s cubic-bezier(.2,.9,.3,1), opacity .32s ease}
+.securenote{text-align:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--sand);margin-top:14px}
+
+/* ---------- receipt ---------- */
+.receipt-col{position:sticky;top:26px}
+@media(max-width:900px){.receipt-col{position:static}}
+
+.receipt{position:relative;background:linear-gradient(180deg,#fbf9f1 0%, #f4f1e5 100%);
+  padding:34px 26px 30px;color:var(--ink);
+  box-shadow:0 18px 44px rgba(var(--olive-rgb),.2);
+  transform:rotate(-.5deg)}
+.receipt::before,.receipt::after{content:'';position:absolute;left:0;right:0;height:11px;
+  background-size:18px 11px;background-repeat:repeat-x}
+.receipt::before{top:-11px;
+  background-image:linear-gradient(135deg,#fbf9f1 50%,transparent 50%),
+                   linear-gradient(-135deg,#fbf9f1 50%,transparent 50%);
+  background-position:0 100%}
+.receipt::after{bottom:-11px;
+  background-image:linear-gradient(-45deg,#f4f1e5 50%,transparent 50%),
+                   linear-gradient(45deg,#f4f1e5 50%,transparent 50%);
+  background-position:0 0}
+
+.r-head{text-align:center;padding-bottom:16px}
+.r-mark{font-family:var(--serif-2);font-style:italic;font-weight:500;font-size:28px;color:var(--olive);line-height:1}
+.r-sub{font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--sand);margin-top:9px}
+.r-meta{font-size:10.5px;letter-spacing:.1em;color:var(--sand);margin-top:12px;line-height:1.7}
+
+.rule{height:1px;margin:14px 0;
+  background:repeating-linear-gradient(90deg,rgba(var(--olive-rgb),.34) 0 4px,transparent 4px 9px)}
+.rule.solid{background:rgba(var(--olive-rgb),.24)}
+
+.r-line{display:flex;align-items:baseline;gap:10px;font-size:13px;padding:5px 0}
+.r-line .grow{flex:1 1 auto;min-width:0}
+.r-line .dots{flex:1 1 auto;height:1px;transform:translateY(-3px);
+  background:repeating-linear-gradient(90deg,rgba(var(--olive-rgb),.3) 0 2px,transparent 2px 6px)}
+.r-line .amt{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--ink)}
+.r-item{font-family:var(--serif-2);font-style:italic;font-size:19px;color:var(--olive);line-height:1.25}
+.r-qty{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--sand);margin-top:5px}
+.r-key{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--sand)}
+.r-recipient{font-family:var(--serif-2);font-style:italic;font-size:22px;color:var(--olive);margin-top:4px}
+
+.r-total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:6px}
+.r-total .lbl{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--olive-2)}
+.r-total .amt{font-family:var(--serif-2);font-size:30px;color:var(--olive);font-variant-numeric:tabular-nums}
+
+.stamp{position:absolute;right:16px;bottom:112px;transform:rotate(-9deg);
+  border:2px solid rgba(168,99,90,.5);color:rgba(168,99,90,.68);border-radius:8px;
+  padding:6px 12px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
+  opacity:.85}
+
+.barcode{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:46px;margin-top:18px}
+.barcode i{display:block;width:2px;background:rgba(var(--ink-rgb),.72);height:100%}
+.barcode i.w{width:4px}
+.barcode i.s{height:70%}
+.r-foot{text-align:center;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--sand);margin-top:12px}
+.r-heart{text-align:center;font-family:var(--serif-2);font-style:italic;font-size:16px;color:var(--olive-2);margin-top:10px}
+
+/* ---------- boom ---------- */
+#boom{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
+.spark{position:absolute;border-radius:50%;will-change:transform,opacity}
+.flash{position:fixed;inset:0;z-index:70;background:#fff;opacity:0;pointer-events:none;
+  transition:opacity .34s ease}
+.flash.on{opacity:1}
+
+@media(prefers-reduced-motion:reduce){
+  body::before,body::after{animation:none}
+  body.shaking{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="storebar">
+  <div class="storebar-in">
+    <span class="wordmark">Katelynn</span>
+    <span class="wordmark-tag">secure checkout</span>
+    <nav class="crumbs">
+      <span>Cart</span><span class="sep">›</span>
+      <span>Information</span><span class="sep">›</span>
+      <span>Shipping</span><span class="sep">›</span>
+      <span class="on">Payment</span>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ left: the checkout form ============ -->
+  <div class="form-col">
+
+    <section class="sec">
+      <div class="sec-head">
+        <h2 class="sec-title">Contact</h2>
+        <span class="sec-note">step 1 of 3</span>
+      </div>
+      <div class="card">
+        <div class="field">
+          <span class="lab">Email</span>
+          <span class="val soft">you@already-know.com</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-head">
+        <h2 class="sec-title">Deliver to</h2>
+        <span class="sec-note">recipient</span>
+      </div>
+      <div class="card">
+        <div class="field">
+          <span class="lab">Recipient</span>
+          <span class="val name">Ayla</span>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <span class="lab">Method</span>
+            <span class="val soft">In person</span>
+          </div>
+          <div class="field">
+            <span class="lab">Window</span>
+            <span class="val soft">Friday, 7:00 PM</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab">Notes</span>
+          <span class="val soft">Wear the thing you like. No substitutions.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-head">
+        <h2 class="sec-title">Payment</h2>
+        <span class="sec-note">all transactions are sincere</span>
+      </div>
+      <div class="card">
+
+        <div class="opt sel">
+          <span class="radio" aria-hidden="true"></span>
+          <div class="opt-body">
+            <div class="opt-title">Dinner and a movie <span class="pill">primary</span></div>
+            <div class="opt-sub">Payable in full on arrival. Dinner first, movie chosen by the recipient. Popcorn is non-negotiable.</div>
+          </div>
+          <div class="opt-amt">Due</div>
+        </div>
+
+        <div class="opt sel">
+          <span class="radio" aria-hidden="true"></span>
+          <div class="opt-body">
+            <div class="opt-title">Secondary payment requirement <span class="pill req">required</span></div>
+            <div class="opt-sub">Settled in cash, transfer, or an equivalently unreasonable gesture.</div>
+          </div>
+          <div class="opt-amt">$600.00</div>
+        </div>
+
+      </div>
+      <p class="fineprint">
+        Both payment requirements must be satisfied. Partial fulfillment does not clear the fine.
+        Refunds are not available; appeals may be filed in person, in a nice outfit.
+      </p>
+    </section>
+
+    <div class="paywrap">
+      <button class="pay" id="payBtn">Complete order</button>
+      <div class="securenote">🔒 encrypted · non-refundable · legally adorable</div>
+    </div>
+  </div>
+
+  <!-- ============ right: the receipt ============ -->
+  <aside class="receipt-col">
+    <div class="receipt">
+      <div class="stamp">unpaid</div>
+
+      <div class="r-head">
+        <div class="r-mark">Katelynn</div>
+        <div class="r-sub">order receipt</div>
+        <div class="r-meta">
+          NO. 0042 — 07 · 31 · 2026<br>
+          ISSUED BY THE DEPARTMENT OF BEING NORMAL ABOUT IT
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="r-key">Issued to</div>
+      <div class="r-recipient">Ayla</div>
+
+      <div class="rule"></div>
+
+      <div class="r-line">
+        <div class="grow">
+          <div class="r-item">Bad girl fine</div>
+          <div class="r-qty">qty 1 · citation #BGF-001</div>
+        </div>
+        <div class="amt">$600.00</div>
+      </div>
+
+      <div class="r-line">
+        <span>Dinner and a movie</span>
+        <span class="dots"></span>
+        <span class="amt">incl.</span>
+      </div>
+      <div class="r-line">
+        <span>Good behavior discount</span>
+        <span class="dots"></span>
+        <span class="amt">$0.00</span>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="r-line">
+        <span>Subtotal</span>
+        <span class="dots"></span>
+        <span class="amt">$600.00</span>
+      </div>
+      <div class="r-line">
+        <span>Attitude tax</span>
+        <span class="dots"></span>
+        <span class="amt">$0.00</span>
+      </div>
+
+      <div class="rule solid"></div>
+
+      <div class="r-total">
+        <span class="lbl">Total due</span>
+        <span class="amt">$600.00</span>
+      </div>
+      <div class="r-line" style="margin-top:6px">
+        <span class="r-key">+ one dinner and a movie</span>
+      </div>
+
+      <div class="barcode" aria-hidden="true">
+        <i></i><i class="w s"></i><i></i><i class="w"></i><i class="s"></i><i></i><i class="w"></i>
+        <i class="s"></i><i></i><i></i><i class="w s"></i><i></i><i class="w"></i><i></i>
+        <i class="s"></i><i class="w"></i><i></i><i class="s"></i><i></i><i class="w"></i>
+        <i></i><i class="w s"></i><i></i><i></i><i class="w"></i><i class="s"></i><i></i>
+      </div>
+      <div class="r-foot">thank you for your compliance</div>
+      <div class="r-heart">this fine cannot be appealed</div>
+    </div>
+  </aside>
+</main>
+
+<div id="boom" aria-hidden="true"></div>
+<div class="flash" id="flash" aria-hidden="true"></div>
+
+<script>
+(function(){
+  var btn   = document.getElementById('payBtn');
+  var boom  = document.getElementById('boom');
+  var flash = document.getElementById('flash');
+  var fired = false;
+
+  var COLORS = ['#7fc4bd','#6b6858','#b3ad97','#f0ede3','#8fb8ad','#a8635a','#d6d2c2'];
+
+  btn.addEventListener('click', function(){
+    if (fired) return;
+    fired = true;
+
+    var r  = btn.getBoundingClientRect();
+    var cx = r.left + r.width / 2;
+    var cy = r.top  + r.height / 2;
+
+    // the button blows apart
+    btn.classList.add('blown');
+    document.body.classList.add('shaking');
+
+    for (var i = 0; i < 90; i++) spark(cx, cy, i);
+
+    // then everything goes white and calm
+    setTimeout(function(){ flash.classList.add('on'); }, 620);
+    setTimeout(function(){ window.location.href = 'you-are-cute.html'; }, 980);
+  });
+
+  function spark(cx, cy, i){
+    var el = document.createElement('span');
+    el.className = 'spark';
+
+    var size = 5 + Math.random() * 13;
+    var ang  = Math.random() * Math.PI * 2;
+    var dist = 130 + Math.random() * 520;
+    var dx   = Math.cos(ang) * dist;
+    var dy   = Math.sin(ang) * dist - 120;   // bias upward, then gravity pulls
+    var dur  = 620 + Math.random() * 460;
+
+    el.style.width      = size + 'px';
+    el.style.height     = size + 'px';
+    el.style.left       = (cx - size / 2) + 'px';
+    el.style.top        = (cy - size / 2) + 'px';
+    el.style.background = COLORS[i % COLORS.length];
+    el.style.boxShadow  = '0 0 12px ' + COLORS[i % COLORS.length];
+    if (i % 5 === 0) el.style.borderRadius = '2px';
+
+    boom.appendChild(el);
+
+    el.animate([
+      { transform:'translate(0,0) scale(1) rotate(0deg)',  opacity:1 },
+      { transform:'translate(' + (dx * .62) + 'px,' + (dy * .62) + 'px) scale(1.1) rotate(180deg)', opacity:1, offset:.55 },
+      { transform:'translate(' + dx + 'px,' + (dy + 340) + 'px) scale(.2) rotate(420deg)', opacity:0 }
+    ], { duration: dur, easing:'cubic-bezier(.16,.7,.3,1)', fill:'forwards' });
+  }
+})();
+</script>
+</body>
+</html>
