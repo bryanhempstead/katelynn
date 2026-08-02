@@ -7,7 +7,7 @@ export { icon } from './icons.js';
 import { applyDesign } from './design.js';
 
 const views = new Map();
-const NAV_ORDER = ['dashboard', 'projects', 'inventory', 'clients', 'calendar', 'reports', 'design', 'settings'];
+const NAV_ORDER = ['dashboard', 'projects', 'inventory', 'clients', 'calendar', 'reports', 'settings'];
 
 export function registerView(name, view) { views.set(name, view); }
 

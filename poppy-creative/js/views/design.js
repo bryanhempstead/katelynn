@@ -2,7 +2,7 @@
 // size & spacing, colors with a legibility checker, and reset to defaults.
 // Edits the 'design' record in the settings store; js/design.js (applyDesign)
 // re-applies it live on every save via db.onChange.
-import { registerView, h, toast, confirmDialog, openModal, closeModal, icon } from '../app.js';
+import { h, toast, confirmDialog, openModal, closeModal, icon } from '../app.js';
 import { db } from '../db.js';
 import { defaultDesign, normalizeDesign, contrastRatio, BUNDLED_FONTS } from '../design.js';
 
@@ -74,16 +74,47 @@ function cssFamily(family) {
   return `"${String(family).replace(/"/g, '')}"`;
 }
 
-registerView('design', {
-  title: 'Design',
-  icon: 'bud',
-  async render(el) {
+// The Design Studio opens as a right-side slide-over panel so changes are
+// visible on the live app beside it. Opened from Settings.
+let drawerEl = null;
+let drawerBody = null;
+let unsubscribe = null;
+
+export function openDesignStudio() {
+  if (drawerEl) return;
+  drawerBody = h('div', { class: 'drawer-body' });
+  drawerEl = h('aside', { class: 'side-drawer', role: 'complementary', 'aria-label': 'Design Studio' },
+    h('div', { class: 'drawer-head' },
+      h('h2', null, icon('bud', 16), ' Design Studio'),
+      h('span', { class: 'drawer-live' }, 'changes apply live'),
+      h('button', { class: 'icon-btn', 'aria-label': 'Close Design Studio', onClick: closeDesignStudio }, '✕')),
+    drawerBody);
+  document.body.append(drawerEl);
+  document.body.classList.add('drawer-open');
+  renderStudio(drawerBody);
+  let t = null;
+  unsubscribe = db.onChange(store => {
+    if (store !== 'settings' || !drawerBody) return;
+    clearTimeout(t);
+    t = setTimeout(() => renderStudio(drawerBody), 90);
+  });
+}
+
+export function closeDesignStudio() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  drawerEl?.remove();
+  drawerEl = null;
+  drawerBody = null;
+  document.body.classList.remove('drawer-open');
+}
+
+async function renderStudio(el) {
     await db.ready;
     const design = normalizeDesign(await db.get('settings', 'design'));
 
     async function save() {
-      pendingScrollY = window.scrollY;
-      await db.put('settings', design); // applyDesign + re-render fire via db.onChange
+      pendingScrollY = el.scrollTop;
+      await db.put('settings', design); // applyDesign fires via db.onChange
     }
 
     // ---- Branding ---------------------------------------------------------
@@ -350,24 +381,21 @@ registerView('design', {
           const ok = await confirmDialog(
             'Reset the design to the Poppy defaults? Your logo and uploaded custom fonts will be cleared as well.');
           if (!ok) return;
-          pendingScrollY = window.scrollY;
+          pendingScrollY = el.scrollTop;
           await db.put('settings', defaultDesign());
           toast('Design reset to Poppy defaults');
         },
       }, 'Reset design to Poppy defaults'));
 
-    el.append(
-      h('div', { class: 'view-head' },
-        h('div', { class: 'grow' },
-          h('h1', null, icon('bud', 22), ' Design'),
-          h('p', { class: 'subtitle' }, 'Make PoppyShuffle look like your brand — logo, fonts, sizing, and colors.'))),
+    el.replaceChildren(
+      h('p', { class: 'subtitle', style: 'margin:.1rem 0 .8rem' },
+        'Make the app look like your brand — logo, fonts, sizing, and colors. Watch the app update beside you as you adjust.'),
       brandingCard, typographyCard, sizesCard, colorsCard, resetCard);
 
-    // Restore scroll after a save-triggered re-render (app.js resets it).
+    // Restore drawer scroll after a save-triggered re-render.
     if (pendingScrollY != null) {
       const y = pendingScrollY;
       pendingScrollY = null;
-      requestAnimationFrame(() => window.scrollTo(0, y));
+      requestAnimationFrame(() => { el.scrollTop = y; });
     }
-  },
-});
+}

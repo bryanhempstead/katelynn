@@ -307,3 +307,26 @@ table.data tr.rowlink:hover { background: var(--surface-2); }
   .main { padding: 0; max-width: none; }
   body { background: #fff; }
 }
+
+/* Design Studio slide-over drawer — app stays visible & live beside it. */
+.side-drawer {
+  position: fixed; top: 55px; right: 0; bottom: 0; z-index: 50;
+  width: min(430px, 100vw); background: var(--surface);
+  border-left: 1px solid var(--line); box-shadow: -10px 0 32px rgba(0, 0, 0, .16);
+  display: flex; flex-direction: column; animation: drawer-in .24s ease;
+}
+@keyframes drawer-in { from { transform: translateX(40px); opacity: 0; } }
+.drawer-head {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .7rem .9rem; border-bottom: 1px solid var(--line);
+}
+.drawer-head h2 { margin: 0; flex: 0 0 auto; }
+.drawer-live {
+  flex: 1; font-size: .72rem; color: var(--muted); font-style: italic; text-align: right;
+  padding-right: .2rem;
+}
+.drawer-body { flex: 1; overflow-y: auto; padding: .9rem .9rem 2.2rem; }
+.drawer-body .card { padding: .8rem .9rem; }
+@media (min-width: 1280px) {
+  body.drawer-open .main { padding-right: 450px; }
+}

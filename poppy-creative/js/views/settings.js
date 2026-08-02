@@ -3,6 +3,7 @@
 import { registerView, h, toast, confirmDialog, navigate, icon } from '../app.js';
 import { db } from '../db.js';
 import { todayISO, nextQuoteNumber } from '../schema.js';
+import { openDesignStudio } from './design.js';
 
 const APP_VERSION = '1.0.0';
 
@@ -321,11 +322,17 @@ registerView('settings', {
         'It is free and open source: no build step, no server, plain ES modules on top of IndexedDB, deployable on any static host and installable as a PWA. Themed and seeded for The Poppy Creative of Mandan, ND.'),
       h('p', { class: 'stock-note' }, `Version ${APP_VERSION}`));
 
+    const designCard = h('div', { class: 'card' },
+      h('h2', null, icon('bud'), ' Design Studio'),
+      h('p', { class: 'subtitle' },
+        'Logo, fonts (including your own uploads), sizing, spacing, and light/dark colors — edited in a side panel so you can watch the app change in real time.'),
+      h('button', { class: 'btn btn-primary', onClick: openDesignStudio }, 'Open Design Studio'));
+
     el.append(
       h('div', { class: 'view-head' },
         h('div', { class: 'grow' },
           h('h1', null, icon('daisy', 22), ' Settings'),
-          h('p', { class: 'subtitle' }, 'Business profile, policies, data, website integration, and payments.'))),
-      profileCard, policiesCard, dataCard, websiteCard, paymentsCard, aboutCard);
+          h('p', { class: 'subtitle' }, 'Business profile, policies, design, data, website integration, and payments.'))),
+      designCard, profileCard, policiesCard, dataCard, websiteCard, paymentsCard, aboutCard);
   },
 });
