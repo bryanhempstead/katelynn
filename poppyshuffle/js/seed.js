@@ -59,13 +59,13 @@ export function seedData() {
       'Freestanding sage arch wall — flowers and signage attach easily.', ['photo', 'ceremony']),
     inv('it-shimmer-wall', 'Champagne Shimmer Wall', 'Backdrops', 'rental', 11000, 'per event', 1, '✨', '#E8B44F',
       'Champagne sequin shimmer wall, 7×7 ft — pure sparkle in photos.', ['photo', 'party']),
-    inv('it-balloon-garland', 'Balloon Garland (10 ft, custom colors)', 'Backdrops', 'rental', 15000, 'per event', 4, '🎈', '#E4593B',
+    inv('it-balloon-garland', 'Balloon Garland (10 ft, custom colors)', 'Backdrops', 'rental', 15000, 'per event', 4, '🎈', '#DE1E7E',
       'Custom-color balloon garland installed on any backdrop or wall.', ['balloon', 'party']),
     // Rugs
     inv('it-persian-rug', 'Vintage Persian-Style Rug', 'Rugs', 'rental', 4500, 'per event', 5, '🧶', '#B0563B',
       'Layered vintage-style rugs to warm up ceremonies and lounges.', ['boho', 'lounge']),
     // Decor
-    inv('it-neon-sign', 'Neon Sign — "let’s party"', 'Decor', 'rental', 5000, 'per event', 1, '💡', '#E4593B',
+    inv('it-neon-sign', 'Neon Sign — "let’s party"', 'Decor', 'rental', 5000, 'per event', 1, '💡', '#DE1E7E',
       'Warm-white neon sign, hangs on any backdrop.', ['photo', 'party']),
     inv('it-taper-candles', 'Taper Candle + Bud Vase Set (10 tables)', 'Decor', 'rental', 6000, 'per event', 3, '🕯️', '#E8B44F',
       'Amber bud vases, taper candles, and holders styled per table.', ['tablescape']),

@@ -18,53 +18,53 @@ function docStyles() {
   return `
     * { box-sizing: border-box; }
     body {
-      margin: 0; padding: 2.2rem 2.4rem; color: #233329; background: #fff;
+      margin: 0; padding: 2.2rem 2.4rem; color: #3B3B35; background: #fff;
       font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
       max-width: 820px; margin-inline: auto;
     }
     h1, h2, h3 { font-family: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman", serif; margin: 0; }
     .doc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
-      border-bottom: 3px solid #E4593B; padding-bottom: 1rem; margin-bottom: 1.4rem; }
-    .biz-name { font-size: 1.6rem; color: #E4593B; }
-    .biz-sub { color: #4a5a50; font-size: .82rem; letter-spacing: .05em; text-transform: uppercase; margin-top: .2rem; }
-    .biz-contact { color: #4a5a50; font-size: .8rem; margin-top: .4rem; }
+      border-bottom: 3px solid #DE1E7E; padding-bottom: 1rem; margin-bottom: 1.4rem; }
+    .biz-name { font-size: 1.6rem; color: #DE1E7E; }
+    .biz-sub { color: #5C5C54; font-size: .82rem; letter-spacing: .05em; text-transform: uppercase; margin-top: .2rem; }
+    .biz-contact { color: #5C5C54; font-size: .8rem; margin-top: .4rem; }
     .doc-meta { text-align: right; }
-    .doc-title { font-size: 1.35rem; letter-spacing: .12em; color: #233329; }
-    .doc-num { color: #E4593B; font-weight: 700; margin-top: .2rem; }
-    .doc-date { color: #4a5a50; font-size: .82rem; margin-top: .2rem; }
+    .doc-title { font-size: 1.35rem; letter-spacing: .12em; color: #3B3B35; }
+    .doc-num { color: #DE1E7E; font-weight: 700; margin-top: .2rem; }
+    .doc-date { color: #5C5C54; font-size: .82rem; margin-top: .2rem; }
     .blocks { display: flex; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
-    .block h3 { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #8b948d; margin-bottom: .25rem; }
+    .block h3 { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #8F8F86; margin-bottom: .25rem; }
     .block p { margin: 0; }
     table { width: 100%; border-collapse: collapse; margin: .6rem 0 1rem; }
     th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
-      color: #8b948d; padding: .4rem .5rem; border-bottom: 2px solid #e6ded0; }
+      color: #8F8F86; padding: .4rem .5rem; border-bottom: 2px solid #E7E7DE; }
     td { padding: .45rem .5rem; border-bottom: 1px solid #eee6d8; vertical-align: top; }
     .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .totals { margin-left: auto; width: 320px; max-width: 100%; }
     .totals td { border-bottom: 1px solid #f0eade; }
-    .totals tr.grand td { border-top: 2px solid #233329; border-bottom: none; font-weight: 700; font-size: 1.05rem; }
-    .totals tr.due td { color: #E4593B; font-weight: 700; font-size: 1.15rem; border-bottom: none; }
-    .muted { color: #8b948d; }
-    .note-box { background: #faf6ef; border: 1px solid #e6ded0; border-radius: 10px; padding: .7rem .9rem; margin: 1rem 0; }
+    .totals tr.grand td { border-top: 2px solid #3B3B35; border-bottom: none; font-weight: 700; font-size: 1.05rem; }
+    .totals tr.due td { color: #DE1E7E; font-weight: 700; font-size: 1.15rem; border-bottom: none; }
+    .muted { color: #8F8F86; }
+    .note-box { background: #faf6ef; border: 1px solid #E7E7DE; border-radius: 10px; padding: .7rem .9rem; margin: 1rem 0; }
     .terms { margin: 1.2rem 0; }
     .terms h2 { font-size: 1.05rem; margin-bottom: .4rem; }
     .terms ol { padding-left: 1.2rem; margin: .3rem 0; }
     .terms li { margin: .35rem 0; }
-    .editable { color: #8b948d; font-style: italic; }
+    .editable { color: #8F8F86; font-style: italic; }
     .sig { margin-top: 2.2rem; }
-    .sig-line { border-bottom: 1.5px solid #233329; height: 2.4rem; max-width: 340px; display: flex; align-items: flex-end; }
+    .sig-line { border-bottom: 1.5px solid #3B3B35; height: 2.4rem; max-width: 340px; display: flex; align-items: flex-end; }
     .sig-name { font-family: "Fraunces", Georgia, serif; font-size: 1.25rem; }
-    .sig-cap { font-size: .78rem; color: #8b948d; margin-top: .25rem; }
+    .sig-cap { font-size: .78rem; color: #8F8F86; margin-top: .25rem; }
     .signed-stamp { display: inline-block; border: 2px solid #4E6B51; color: #4E6B51; border-radius: 8px;
       padding: .3rem .7rem; font-weight: 700; margin-top: .5rem; }
-    .pull-check { display: inline-block; width: 1.05em; height: 1.05em; border: 2px solid #233329;
+    .pull-check { display: inline-block; width: 1.05em; height: 1.05em; border: 2px solid #3B3B35;
       border-radius: 3px; vertical-align: middle; }
     .notes-col { min-width: 160px; }
     .crew-sigs { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 2.4rem; }
     .crew-sig { flex: 1; min-width: 180px; }
-    .doc-foot { margin-top: 2.4rem; padding-top: .8rem; border-top: 1px solid #e6ded0;
-      color: #8b948d; font-size: .78rem; text-align: center; }
-    .print-btn { position: fixed; right: 1.2rem; bottom: 1.2rem; background: #E4593B; color: #fff;
+    .doc-foot { margin-top: 2.4rem; padding-top: .8rem; border-top: 1px solid #E7E7DE;
+      color: #8F8F86; font-size: .78rem; text-align: center; }
+    .print-btn { position: fixed; right: 1.2rem; bottom: 1.2rem; background: #DE1E7E; color: #fff;
       border: none; border-radius: 99px; padding: .7rem 1.3rem; font: inherit; font-weight: 700;
       cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
     .print-btn:hover { background: #B0402A; }
