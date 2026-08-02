@@ -1,14 +1,14 @@
 // Dashboard view — warm greeting, key stats, needs-attention flags, next-up
 // schedule, and quick actions. Registered on the '#/dashboard' route.
-import { registerView, h, navigate, fmtMoney, fmtDate } from '../app.js';
+import { registerView, h, navigate, fmtMoney, fmtDate, icon } from '../app.js';
 import { db } from '../db.js';
 import { projectTotals, todayISO, addDaysISO, STATUS_META } from '../schema.js';
 
 function greeting() {
   const hr = new Date().getHours();
-  if (hr < 12) return 'Good morning ☀️';
-  if (hr < 17) return 'Good afternoon 🌤️';
-  return 'Good evening 🌙';
+  if (hr < 12) return 'Good morning';
+  if (hr < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
 function statusBadge(status) {
@@ -60,7 +60,7 @@ registerView('dashboard', {
     for (const p of quotes) {
       if (p.eventDate && p.eventDate >= today && p.eventDate <= in14) {
         flags.push({
-          emoji: '✍️', projectId: p.id,
+          flagIcon: 'bellflower', projectId: p.id,
           text: `${p.quoteNumber ? p.quoteNumber + ' — ' : ''}${p.name}: event is ${fmtDate(p.eventDate)} and the quote is still unsigned.`,
         });
       }
@@ -70,7 +70,7 @@ registerView('dashboard', {
       if (t.balanceDue > 0 && t.balanceDueDate && t.balanceDueDate <= in7) {
         const overdue = t.balanceDueDate < today;
         flags.push({
-          emoji: '💸', projectId: p.id,
+          flagIcon: 'seedhead', projectId: p.id,
           text: `${p.name}: ${fmtMoney(t.balanceDue)} balance ${overdue ? 'was due' : 'due'} ${fmtDate(t.balanceDueDate)}${overdue ? ' — overdue' : ''}.`,
         });
       }
@@ -79,14 +79,14 @@ registerView('dashboard', {
       const created = (p.createdAt || '').slice(0, 10);
       if (created && created < staleBefore) {
         flags.push({
-          emoji: '🌱', projectId: p.id,
+          flagIcon: 'sprout', projectId: p.id,
           text: `Lead going stale: ${p.name} (created ${fmtDate(created)}) — time to follow up.`,
         });
       }
     }
 
     const attention = h('div', { class: 'card' },
-      h('h2', null, '🔔 Needs attention'),
+      h('h2', null, icon('bellflower'), ' Needs attention'),
       flags.length
         ? h('div', { class: 'table-scroll' },
             h('table', { class: 'data' },
@@ -95,9 +95,9 @@ registerView('dashboard', {
                   class: 'rowlink',
                   onClick: () => navigate(`#/projects/${f.projectId}`),
                 },
-                  h('td', { style: 'width:2rem' }, f.emoji),
+                  h('td', { style: 'width:2rem' }, icon(f.flagIcon, 18)),
                   h('td', null, f.text))))))
-        : h('div', { class: 'empty' }, h('div', { class: 'big' }, '🎉'), 'All caught up!'));
+        : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('flower', 40)), 'All caught up!'));
 
     // ---- Next up -----------------------------------------------------------
     const nextUp = projects
@@ -106,7 +106,7 @@ registerView('dashboard', {
       .slice(0, 6);
 
     const nextCard = h('div', { class: 'card' },
-      h('h2', null, '📅 Next up'),
+      h('h2', null, icon('calendarFlower'), ' Next up'),
       nextUp.length
         ? h('div', { class: 'table-scroll' },
             h('table', { class: 'data' },
@@ -124,7 +124,7 @@ registerView('dashboard', {
                   h('td', null, statusBadge(p.status)),
                   h('td', { class: 'num' }, fmtMoney(totalsOf.get(p.id).total)))))))
         : h('div', { class: 'empty' },
-            h('div', { class: 'big' }, '🌷'),
+            h('div', { class: 'big' }, icon('bud', 40)),
             'Nothing on the calendar yet — time to book something lovely.'));
 
     // ---- Assemble ----------------------------------------------------------
@@ -134,9 +134,9 @@ registerView('dashboard', {
           h('h1', null, greeting()),
           h('p', { class: 'subtitle' },
             `Today is ${fmtDate(today)} — here's what's happening at ${settings?.name || 'your studio'}.`)),
-        h('button', { class: 'btn btn-primary', onClick: () => navigate('#/projects') }, '➕ New project'),
-        h('button', { class: 'btn', onClick: () => navigate('#/inventory') }, '📦 Add inventory'),
-        h('button', { class: 'btn', onClick: () => navigate('#/calendar') }, '🗓️ View calendar')),
+        h('button', { class: 'btn btn-primary', onClick: () => navigate('#/projects') }, icon('tulip', 18), ' New project'),
+        h('button', { class: 'btn', onClick: () => navigate('#/inventory') }, icon('pot', 18), ' Add inventory'),
+        h('button', { class: 'btn', onClick: () => navigate('#/calendar') }, icon('calendarFlower', 18), ' View calendar')),
       h('div', { class: 'stat-grid' },
         stat('Upcoming events', String(upcoming.length), 'next 30 days'),
         stat('Pipeline value', fmtMoney(pipelineValue), `${leads.length} lead${leads.length === 1 ? '' : 's'} · ${quotes.length} quote${quotes.length === 1 ? '' : 's'}`),

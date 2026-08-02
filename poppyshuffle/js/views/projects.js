@@ -1,5 +1,5 @@
 // Projects view — pipeline list + project detail (the quote builder). Owner: Agent C.
-import { registerView, h, navigate, toast, openModal, closeModal, confirmDialog } from '../app.js';
+import { registerView, h, navigate, toast, openModal, closeModal, confirmDialog, icon } from '../app.js';
 import { db } from '../db.js';
 import {
   fmtMoney, parseMoney, fmtDate, todayISO, projectTotals, nextQuoteNumber,
@@ -100,7 +100,7 @@ async function renderList(el) {
 
     if (!projects.length) {
       tableWrap.replaceChildren(h('div', { class: 'empty' },
-        h('div', { class: 'big' }, '🎪'),
+        h('div', { class: 'big' }, icon('tulip', 40)),
         h('p', null, 'No projects yet — create your first quote to get the party started.')));
       return;
     }
@@ -185,7 +185,7 @@ async function renderDetail(el, id) {
 
   if (!project) {
     el.append(h('div', { class: 'empty' },
-      h('div', { class: 'big' }, '🎪'),
+      h('div', { class: 'big' }, icon('tulip', 40)),
       h('p', null, 'Project not found — it may have been deleted.'),
       h('p', null, h('a', { href: '#/projects' }, '← Back to projects'))));
     return;
@@ -225,7 +225,7 @@ async function renderDetail(el, id) {
     h('button', {
       class: 'btn btn-sm', title: 'Copy this project as a new lead',
       onClick: duplicateProject,
-    }, '⧉ Duplicate'),
+    }, icon('stems', 16), ' Duplicate'),
     h('label', { class: 'field' }, 'Status', statusSel)));
 
   async function duplicateProject() {
@@ -337,7 +337,7 @@ async function renderDetail(el, id) {
               onClick: () => { lines.splice(i, 1); save(); },
             }, '✕')))))))
       : h('div', { class: 'empty' },
-        h('div', { class: 'big' }, '🛋️'),
+        h('div', { class: 'big' }, icon('pot', 40)),
         h('p', null, 'No line items yet — add spaces, rentals, or services from inventory.'))));
 
   function addCustomLine() {
@@ -548,7 +548,7 @@ async function renderDetail(el, id) {
             if (project.status === 'lead' || project.status === 'quote') patch.status = 'signed';
             await save(patch);
             closeModal();
-            toast(`Contract signed by ${name} 🎉`);
+            toast(`Contract signed by ${name}`);
           },
         },
       ],
@@ -561,10 +561,10 @@ async function renderDetail(el, id) {
     h('h2', null, 'Documents'),
     h('p', { class: 'subtitle' }, 'Opens a printable page in a new tab — print to save as PDF.'),
     h('div', { class: 'chip-row', style: 'margin-top:.5rem' },
-      h('button', { class: 'btn', onClick: () => openDoc('quote', docData) }, '📄 Quote'),
-      h('button', { class: 'btn', onClick: () => openDoc('contract', docData) }, '✍️ Contract'),
-      h('button', { class: 'btn', onClick: () => openDoc('invoice', docData) }, '🧾 Invoice'),
-      h('button', { class: 'btn', onClick: () => openDoc('pullsheet', docData) }, '📋 Pull sheet'))));
+      h('button', { class: 'btn', onClick: () => openDoc('quote', docData) }, icon('leaf', 18), ' Quote'),
+      h('button', { class: 'btn', onClick: () => openDoc('contract', docData) }, icon('bud', 18), ' Contract'),
+      h('button', { class: 'btn', onClick: () => openDoc('invoice', docData) }, icon('seedhead', 18), ' Invoice'),
+      h('button', { class: 'btn', onClick: () => openDoc('pullsheet', docData) }, icon('branch', 18), ' Pull sheet'))));
 
   /* ---- danger zone ---- */
   el.append(h('div', { class: 'card', style: 'border-color:var(--bad)' },

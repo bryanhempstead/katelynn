@@ -1,6 +1,6 @@
 // Reports view — revenue & payments by month (pure CSS bars), top items,
 // status breakdown, client leaderboard, and CSV exports.
-import { registerView, h, toast, fmtMoney } from '../app.js';
+import { registerView, h, toast, fmtMoney, icon } from '../app.js';
 import { db } from '../db.js';
 import { projectTotals, STATUS_META, PROJECT_STATUSES } from '../schema.js';
 
@@ -204,10 +204,10 @@ registerView('reports', {
     el.append(
       h('div', { class: 'view-head' },
         h('div', { class: 'grow' },
-          h('h1', null, '📈 Reports'),
+          h('h1', null, icon('vineUp', 22), ' Reports'),
           h('p', { class: 'subtitle' }, `${monthLabel(range.from)} – ${monthLabel(range.to)}`)),
-        h('button', { class: 'btn', onClick: exportProjects }, '⬇️ Export projects CSV'),
-        h('button', { class: 'btn', onClick: exportPayments }, '⬇️ Export payments CSV')),
+        h('button', { class: 'btn', onClick: exportProjects }, icon('leaf', 18), ' Export projects CSV'),
+        h('button', { class: 'btn', onClick: exportPayments }, icon('leaf', 18), ' Export payments CSV')),
 
       h('div', { class: 'card card-tight' },
         h('div', { class: 'form-grid' },
@@ -215,19 +215,19 @@ registerView('reports', {
           h('label', { class: 'field' }, 'To month', toInput))),
 
       h('div', { class: 'card' },
-        h('h2', null, '🌺 Revenue by month'),
+        h('h2', null, icon('flower'), ' Revenue by month'),
         h('p', { class: 'subtitle' }, 'Signed & completed projects, grouped by event date.'),
         anyRevenue ? barChart(revRows, 'var(--poppy)')
-          : h('div', { class: 'empty' }, h('div', { class: 'big' }, '🌱'), 'No booked revenue in this range yet.')),
+          : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('sprout', 40)), 'No booked revenue in this range yet.')),
 
       h('div', { class: 'card' },
-        h('h2', null, '💰 Payments collected by month'),
+        h('h2', null, icon('seedhead'), ' Payments collected by month'),
         h('p', { class: 'subtitle' }, 'All recorded payments; refunds count as negative.'),
         anyPayments ? barChart(payRows, 'var(--sage)')
-          : h('div', { class: 'empty' }, h('div', { class: 'big' }, '🪙'), 'No payments recorded in this range.')),
+          : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('seedhead', 40)), 'No payments recorded in this range.')),
 
       h('div', { class: 'card' },
-        h('h2', null, '🏆 Top items'),
+        h('h2', null, icon('wreath'), ' Top items'),
         h('p', { class: 'subtitle' }, 'Line items across non-cancelled projects in range, by revenue.'),
         topItems.length
           ? h('div', { class: 'table-scroll' },
@@ -240,10 +240,10 @@ registerView('reports', {
                   h('td', { class: 'num' }, String(it.times)),
                   h('td', { class: 'num' }, String(it.qty)),
                   h('td', { class: 'num' }, fmtMoney(it.revenue)))))))
-          : h('div', { class: 'empty' }, h('div', { class: 'big' }, '📦'), 'No line items in this range.')),
+          : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('pot', 40)), 'No line items in this range.')),
 
       h('div', { class: 'card' },
-        h('h2', null, '🚦 Status breakdown'),
+        h('h2', null, icon('stems'), ' Status breakdown'),
         h('div', { class: 'table-scroll' },
           h('table', { class: 'data' },
             h('thead', null, h('tr', null,
@@ -255,7 +255,7 @@ registerView('reports', {
               h('td', { class: 'num' }, fmtMoney(r.value)))))))),
 
       h('div', { class: 'card' },
-        h('h2', null, '💐 Client leaderboard'),
+        h('h2', null, icon('blooms'), ' Client leaderboard'),
         h('p', { class: 'subtitle' }, 'Top clients by booked (signed & completed) value in range.'),
         topClients.length
           ? h('div', { class: 'table-scroll' },
@@ -267,6 +267,6 @@ registerView('reports', {
                   h('td', null, clientById.get(r.clientId)?.name || 'Unknown client'),
                   h('td', { class: 'num' }, String(r.events)),
                   h('td', { class: 'num' }, fmtMoney(r.value)))))))
-          : h('div', { class: 'empty' }, h('div', { class: 'big' }, '🫙'), 'No booked clients in this range yet.')));
+          : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('blooms', 40)), 'No booked clients in this range yet.')));
   },
 });

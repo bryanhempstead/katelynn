@@ -1,6 +1,6 @@
 // Settings view — business profile, policies, data backup/restore,
 // website integration (embed snippet + wishlist import), and about.
-import { registerView, h, toast, confirmDialog, navigate } from '../app.js';
+import { registerView, h, toast, confirmDialog, navigate, icon } from '../app.js';
 import { db } from '../db.js';
 import { todayISO, nextQuoteNumber } from '../schema.js';
 
@@ -101,7 +101,7 @@ async function importWishlist(text) {
     createdAt: new Date().toISOString(),
   });
 
-  toast(`Wishlist imported — new lead for ${client.name} 🌸`);
+  toast(`Wishlist imported — new lead for ${client.name}`);
   navigate(`#/projects/${project.id}`);
 }
 
@@ -120,7 +120,7 @@ registerView('settings', {
       help ? h('span', { class: 'stock-note' }, help) : null);
 
     const profileCard = h('div', { class: 'card' },
-      h('h2', null, '🏢 Business profile'),
+      h('h2', null, icon('wreath'), ' Business profile'),
       h('p', { class: 'subtitle' }, 'Shown on quotes, contracts, and invoices.'),
       h('div', { class: 'form-grid' },
         field('Business name', 'name'),
@@ -146,7 +146,7 @@ registerView('settings', {
               city: f.city.value.trim(),
               region: f.region.value.trim(),
             });
-            toast('Business profile saved 🌸');
+            toast('Business profile saved');
           },
         }, 'Save profile')));
 
@@ -158,7 +158,7 @@ registerView('settings', {
       h('span', { class: 'stock-note' }, help));
 
     const policiesCard = h('div', { class: 'card' },
-      h('h2', null, '📜 Policies'),
+      h('h2', null, icon('branch'), ' Policies'),
       h('p', { class: 'subtitle' }, "These mirror The Poppy Creative's published booking policies and drive all money math."),
       h('div', { class: 'form-grid' },
         policyField('Deposit %', 'depositPct',
@@ -182,13 +182,13 @@ registerView('settings', {
               inHouseDiscountPct: Math.min(100, Math.max(0, numFrom(p.inHouseDiscountPct, 70))),
               taxPct: Math.min(100, Math.max(0, numFrom(p.taxPct, 5))),
             });
-            toast('Policies saved 🌸');
+            toast('Policies saved');
           },
         }, 'Save policies')));
 
     // ---- Data -------------------------------------------------------------
     const dataCard = h('div', { class: 'card' },
-      h('h2', null, '💾 Data'),
+      h('h2', null, icon('sprout'), ' Data'),
       h('p', { class: 'subtitle' }, 'Everything lives in your browser (IndexedDB). Back it up regularly.'),
       h('div', { class: 'chip-row' },
         h('button', {
@@ -198,7 +198,7 @@ registerView('settings', {
             downloadFile(`poppyshuffle-backup-${todayISO()}.json`, JSON.stringify(data, null, 2));
             toast('Backup exported');
           },
-        }, '⬇️ Export backup (JSON)'),
+        }, icon('leaf', 18), ' Export backup (JSON)'),
         h('button', {
           class: 'btn',
           onClick: () => pickFile('.json,application/json', async text => {
@@ -213,12 +213,12 @@ registerView('settings', {
             if (!ok) return;
             try {
               await db.importJSON(parsed);
-              toast('Backup imported 🌸');
+              toast('Backup imported');
             } catch (err) {
               toast(`Import failed: ${err?.message || err}`, 'bad');
             }
           }),
-        }, '⬆️ Import backup'),
+        }, icon('bud', 18), ' Import backup'),
         h('button', {
           class: 'btn btn-danger',
           onClick: async () => {
@@ -227,7 +227,7 @@ registerView('settings', {
             await db.resetToSeed();
             toast('Reset to demo data');
           },
-        }, '🧹 Reset to demo data')));
+        }, icon('sprout', 18), ' Reset to demo data')));
 
     // ---- Website integration ----------------------------------------------
     const embedSnippet = [
@@ -239,7 +239,7 @@ registerView('settings', {
     ].join('\n');
 
     const websiteCard = h('div', { class: 'card' },
-      h('h2', null, '🌐 Website integration'),
+      h('h2', null, icon('vine'), ' Website integration'),
       h('p', null,
         'PoppyShuffle ships with a public rental catalog and wishlist widget (',
         h('a', { href: 'embed/catalog.html', target: '_blank', rel: 'noopener' }, 'preview the catalog'),
@@ -257,7 +257,7 @@ registerView('settings', {
               .then(() => toast('Embed snippet copied'))
               .catch(() => toast('Could not copy — select and copy the snippet manually.', 'bad'));
           },
-        }, '📋 Copy'),
+        }, icon('branch', 16), ' Copy'),
         h('button', {
           class: 'btn btn-sm btn-primary',
           onClick: () => pickFile('.json,application/json', importWishlist),

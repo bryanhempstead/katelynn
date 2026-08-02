@@ -34,12 +34,12 @@ export function seedData() {
 
   const inventory = [
     // Spaces
-    inv('sp-meadow', 'The Meadow', 'Spaces', 'space', 45000, 'per day', 1, '🌾', '#E8B44F',
-      'Our largest light-filled studio — crisp white walls, chic white-brick accent, warm wood floors, abundant natural light. Ideal for events, photoshoots, and creative gatherings. (placeholder rate)', ['studio', 'events', 'photo']),
+    inv('sp-meadow', 'The Meadow', 'Spaces', 'space', 7500, 'per hour', 1, '🌾', '#E8B44F',
+      'Our largest light-filled studio — crisp white walls, chic white-brick accent, warm wood flooring, and tons of natural light. Ideal for events, photoshoots, and workshops. Available for hourly rental. (placeholder rate)', ['studio', 'events', 'photo']),
     inv('sp-wildflower', 'The Wildflower', 'Spaces', 'space', 5000, 'per day', 6, '🌼', '#8BA888',
       'Bright coworking space — drop in for the day with wifi, coffee, and good company. $50/day.', ['coworking']),
-    inv('sp-grove', 'The Grove', 'Spaces', 'space', 25000, 'per day', 1, '🌳', '#4E6B51',
-      'Cozy mid-size gathering room, perfect for meetings, workshops, and intimate parties. (placeholder rate)', ['meetings', 'workshops']),
+    inv('sp-grove', 'The Grove', 'Spaces', 'space', 6500, 'per hour', 1, '🌳', '#4E6B51',
+      'Cozy mid-size gathering room, perfect for meetings, workshops, and intimate parties. Available for hourly rental. (placeholder rate)', ['meetings', 'workshops']),
     // Seating
     inv('it-velvet-sofa', 'Blush Velvet Sofa', 'Seating', 'rental', 12500, 'per event', 2, '🛋️', '#E4938B',
       'Statement blush velvet sofa — the insta-worthy centerpiece of any lounge setup.', ['lounge', 'vintage']),
@@ -97,7 +97,7 @@ export function seedData() {
       status: 'signed', eventDate: addDaysISO(t, 21), endDate: addDaysISO(t, 21),
       startTime: '17:00', endTime: '23:00', venue: 'The Meadow', inHouse: true,
       lines: [
-        { itemId: 'sp-meadow', name: 'The Meadow', qty: 1, priceCents: 45000, type: 'space' },
+        { itemId: 'sp-meadow', name: 'The Meadow (hourly)', qty: 6, priceCents: 7500, type: 'space' },
         { itemId: 'it-shimmer-wall', name: 'Champagne Shimmer Wall', qty: 1, priceCents: 11000, type: 'rental' },
         { itemId: 'it-balloon-garland', name: 'Balloon Garland (10 ft, custom colors)', qty: 1, priceCents: 15000, type: 'rental' },
         { itemId: 'it-neon-sign', name: 'Neon Sign — "let’s party"', qty: 1, priceCents: 5000, type: 'rental' },
@@ -113,7 +113,7 @@ export function seedData() {
       status: 'quote', eventDate: addDaysISO(t, 35), endDate: addDaysISO(t, 35),
       startTime: '09:00', endTime: '15:00', venue: 'The Grove', inHouse: true,
       lines: [
-        { itemId: 'sp-grove', name: 'The Grove', qty: 1, priceCents: 25000, type: 'space' },
+        { itemId: 'sp-grove', name: 'The Grove (hourly)', qty: 6, priceCents: 6500, type: 'space' },
         { itemId: 'sv-craft-class', name: 'Private Craft Class (up to 12)', qty: 1, priceCents: 30000, type: 'service' },
         { itemId: 'it-farm-table', name: 'Farmhouse Table (8 ft)', qty: 2, priceCents: 8500, type: 'rental' },
       ],

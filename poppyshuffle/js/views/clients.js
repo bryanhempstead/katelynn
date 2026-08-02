@@ -1,5 +1,5 @@
 // Clients view — CRM contacts for The Poppy Creative. Owner: Agent C.
-import { registerView, h, navigate, toast, openModal, closeModal, confirmDialog } from '../app.js';
+import { registerView, h, navigate, toast, openModal, closeModal, confirmDialog, icon } from '../app.js';
 import { db } from '../db.js';
 import { fmtMoney, projectTotals, nextQuoteNumber, todayISO } from '../schema.js';
 
@@ -46,7 +46,7 @@ registerView('clients', {
 
       if (!clients.length) {
         tableWrap.replaceChildren(h('div', { class: 'empty' },
-          h('div', { class: 'big' }, '👥'),
+          h('div', { class: 'big' }, icon('blooms', 40)),
           h('p', null, 'No clients yet — add your first contact to get started.')));
         return;
       }

@@ -1,6 +1,6 @@
 // Inventory view — catalog cards, category/search filters, availability check,
 // add/edit modal. Owns no data shapes; see ARCHITECTURE.md for the contract.
-import { registerView, h, openModal, closeModal, confirmDialog, toast, fmtMoney } from '../app.js';
+import { registerView, h, openModal, closeModal, confirmDialog, toast, fmtMoney, icon } from '../app.js';
 import { db } from '../db.js';
 import { CATEGORIES, ITEM_TYPES, parseMoney, todayISO } from '../schema.js';
 import { itemAvailabilityOn } from '../availability.js';
@@ -157,7 +157,7 @@ registerView('inventory', {
 
       if (!filtered.length) {
         gridWrap.replaceChildren(h('div', { class: 'empty' },
-          h('div', { class: 'big' }, '📦'),
+          h('div', { class: 'big' }, icon('pot', 40)),
           h('p', null, 'No items match. Try another category or search.')));
         return;
       }

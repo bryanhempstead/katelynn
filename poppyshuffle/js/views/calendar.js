@@ -1,5 +1,5 @@
 // Calendar view — month grid of events, upcoming list, and per-space bookings.
-import { registerView, h, navigate, fmtDate, toast } from '../app.js';
+import { registerView, h, navigate, fmtDate, toast, icon } from '../app.js';
 import { db } from '../db.js';
 import { STATUS_META, rangesOverlap, todayISO, addDaysISO } from '../schema.js';
 import { projectsToICS } from '../ical.js';
@@ -112,7 +112,7 @@ registerView('calendar', {
                       style: `background:${statusColor(p.status)}`,
                     }, STATUS_META[p.status]?.label || p.status)))))))
           : h('div', { class: 'empty' },
-              h('div', { class: 'big' }, '🗓️'),
+              h('div', { class: 'big' }, icon('calendarFlower', 40)),
               h('p', null, 'Nothing on the books for the next 60 days.')));
 
       // --- Space bookings for the displayed month (venue schedule) ---

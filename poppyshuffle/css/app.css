@@ -13,6 +13,13 @@
   font-display: swap;
   src: url('../fonts/kaushan-script-latin-400-normal.woff2') format('woff2');
 }
+@font-face {
+  font-family: 'Josefin Sans';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('../fonts/josefin-sans-latin-wght-normal.woff2') format('woff2-variations');
+}
 /* Palette sampled from poppycreates.com's actual logo & pages:
    hot pink #DE1E7E · golden yellow #F5C400 · coral #F0783C ·
    sage #B9CB9C · lime band #D0F0A0 · charcoal #51514C on white. */
@@ -33,8 +40,10 @@
   --line: #E7E7DE;
   --shadow: 0 2px 10px rgba(59, 59, 53, .08);
   --radius: 14px;
+  --charcoal: #3E4038;
   --font-display: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --font-script: "Kaushan Script", "Segoe Script", "Brush Script MT", cursive;
+  --font-elegant: "Josefin Sans", "Century Gothic", "Futura", sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --ok: #6C8A50;
   --warn: #b3821f;
@@ -46,6 +55,7 @@
     --bg: #1E1E1A; --surface: #282823; --surface-2: #32322A; --line: #3F3F37;
     --shadow: 0 2px 12px rgba(0, 0, 0, .35);
     --poppy: #E94795; --gold: #D9A21F; --sage: #9DB47E; --lime: #55663A;
+    --charcoal: #585B51;
   }
 }
 :root[data-mode="dark"] {
@@ -53,6 +63,7 @@
   --bg: #1E1E1A; --surface: #282823; --surface-2: #32322A; --line: #3F3F37;
   --shadow: 0 2px 12px rgba(0, 0, 0, .35);
   --poppy: #E94795; --gold: #D9A21F; --sage: #9DB47E; --lime: #55663A;
+  --charcoal: #585B51;
 }
 
 * { box-sizing: border-box; }
@@ -70,7 +81,11 @@ h1 { font-size: 1.7rem; margin: 0 0 .25rem; }
   content: ""; display: block; width: 44px; height: 4px; border-radius: 99px;
   background: linear-gradient(90deg, var(--poppy), var(--gold)); margin-top: .3rem;
 }
-h2 { font-size: 1.2rem; margin: 0 0 .5rem; }
+h2 {
+  font-family: var(--font-elegant); font-size: .98rem; margin: 0 0 .6rem;
+  text-transform: uppercase; letter-spacing: .15em; font-weight: 600; color: var(--ink);
+}
+.subtitle, .lede { font-family: var(--font-elegant); }
 a { color: var(--poppy); text-decoration: none; }
 p { margin: .4rem 0; }
 
@@ -152,7 +167,11 @@ h1 .bicon, h2 .bicon { margin-right: .35rem; }
 .btn, .chip, .icon-btn, select, .cal-evt, .rowlink { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--poppy); outline-offset: 2px; }
 ::selection { background: color-mix(in srgb, var(--poppy) 30%, transparent); }
-.btn-primary { background: var(--poppy); border-color: var(--poppy); color: #fff; }
+.btn-primary {
+  background: var(--charcoal); border-color: var(--charcoal); color: #fff;
+  font-family: var(--font-elegant); text-transform: uppercase; letter-spacing: .09em;
+  font-size: .85rem; border-radius: 8px;
+}
 .btn-danger { background: transparent; border-color: var(--bad); color: var(--bad); }
 .btn-sm { padding: .28rem .6rem; font-size: .82rem; border-radius: 8px; }
 .icon-btn {
