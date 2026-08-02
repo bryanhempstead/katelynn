@@ -25,6 +25,7 @@ const PRECACHE = [
   'js/availability.js',
   'js/docs.js',
   'js/ical.js',
+  'fonts/fraunces-latin-wght-normal.woff2',
   'js/views/dashboard.js',
   'js/views/inventory.js',
   'js/views/projects.js',
