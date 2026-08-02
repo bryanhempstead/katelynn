@@ -1,4 +1,11 @@
 /* PoppyShuffle theme — The Poppy Creative palette. All views use these tokens. */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/fraunces-latin-wght-normal.woff2') format('woff2-variations');
+}
 :root {
   --poppy: #ED5A35;
   --poppy-deep: #C24325;
@@ -123,7 +130,11 @@ p { margin: .4rem 0; }
   border: 1px solid var(--line); background: var(--surface); color: var(--ink);
   font: inherit; font-weight: 600; cursor: pointer; transition: filter .12s;
 }
-.btn:hover { filter: brightness(.96); }
+.btn:hover { filter: brightness(.96); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn:active { transform: none; }
+.btn, .chip, .icon-btn, select, .cal-evt, .rowlink { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--poppy); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--poppy) 30%, transparent); }
 .btn-primary { background: var(--poppy); border-color: var(--poppy); color: #fff; }
 .btn-danger { background: transparent; border-color: var(--bad); color: var(--bad); }
 .btn-sm { padding: .28rem .6rem; font-size: .82rem; border-radius: 8px; }
