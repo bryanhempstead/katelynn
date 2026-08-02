@@ -14,7 +14,7 @@ export function seedData() {
   const settings = [{
     id: 'company',
     name: 'The Poppy Creative',
-    tagline: 'Venue · Event Rentals · Craft Classes · Coworking',
+    tagline: 'A vibrant community hub in Mandan, ND — venue, event rentals, craft classes & coworking',
     email: 'hello@poppycreates.com',
     phone: '(701) 555-0134',
     address: 'Main Street',
