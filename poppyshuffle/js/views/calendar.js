@@ -1,7 +1,8 @@
 // Calendar view — month grid of events, upcoming list, and per-space bookings.
-import { registerView, h, navigate, fmtDate } from '../app.js';
+import { registerView, h, navigate, fmtDate, toast } from '../app.js';
 import { db } from '../db.js';
 import { STATUS_META, rangesOverlap, todayISO, addDaysISO } from '../schema.js';
+import { projectsToICS } from '../ical.js';
 
 // Displayed month persists across re-renders. m is 0-based.
 const state = { y: null, m: null };
@@ -30,12 +31,26 @@ registerView('calendar', {
       state.y = now.getFullYear();
       state.m = now.getMonth();
     }
-    const [projects, inventory] = await Promise.all([
-      db.all('projects'), db.all('inventory'),
+    const [projects, inventory, clients, settings] = await Promise.all([
+      db.all('projects'), db.all('inventory'), db.all('clients'),
+      db.get('settings', 'company'),
     ]);
     const active = projects.filter(p => p.status !== 'cancelled' && p.eventDate);
     const spaces = inventory.filter(it => it.type === 'space');
     const today = todayISO();
+
+    function exportICS() {
+      const clientsById = new Map(clients.map(c => [c.id, c]));
+      const ics = projectsToICS(projects.filter(p => p.status !== 'cancelled'), settings, clientsById);
+      const blob = new Blob([ics], { type: 'text/calendar' });
+      const url = URL.createObjectURL(blob);
+      const a = h('a', { href: url, download: 'poppy-events.ics' });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('Calendar exported — poppy-events.ics');
+    }
 
     function shiftMonth(delta) {
       const d = new Date(state.y, state.m + delta, 1);
@@ -126,6 +141,7 @@ registerView('calendar', {
           h('div', { class: 'grow' },
             h('h1', null, monthLabel),
             h('p', { class: 'subtitle' }, 'Events & space schedule')),
+          h('button', { class: 'btn btn-sm', onClick: exportICS }, 'Export .ics'),
           h('button', { class: 'btn btn-sm', onClick: () => shiftMonth(-1) }, '‹ Prev'),
           h('button', {
             class: 'btn btn-sm',

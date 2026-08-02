@@ -10,7 +10,7 @@ function esc(v) {
   }[c]));
 }
 
-const DOC_TITLES = { quote: 'QUOTE', contract: 'RENTAL CONTRACT', invoice: 'INVOICE' };
+const DOC_TITLES = { quote: 'QUOTE', contract: 'RENTAL CONTRACT', invoice: 'INVOICE', pullsheet: 'PULL SHEET' };
 
 const KIND_LABELS = { deposit: 'Deposit', balance: 'Balance', refund: 'Refund', other: 'Payment' };
 
@@ -57,6 +57,11 @@ function docStyles() {
     .sig-cap { font-size: .78rem; color: #8b948d; margin-top: .25rem; }
     .signed-stamp { display: inline-block; border: 2px solid #4E6B51; color: #4E6B51; border-radius: 8px;
       padding: .3rem .7rem; font-weight: 700; margin-top: .5rem; }
+    .pull-check { display: inline-block; width: 1.05em; height: 1.05em; border: 2px solid #233329;
+      border-radius: 3px; vertical-align: middle; }
+    .notes-col { min-width: 160px; }
+    .crew-sigs { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 2.4rem; }
+    .crew-sig { flex: 1; min-width: 180px; }
     .doc-foot { margin-top: 2.4rem; padding-top: .8rem; border-top: 1px solid #e6ded0;
       color: #8b948d; font-size: .78rem; text-align: center; }
     .print-btn { position: fixed; right: 1.2rem; bottom: 1.2rem; background: #E4593B; color: #fff;
@@ -82,6 +87,44 @@ function linesTable(project) {
       <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+// Pull sheet checklist — deliberately price-free (crews don't need money).
+function pullLinesTable(project, inventory) {
+  const lines = project.lines || [];
+  if (!lines.length) return `<p class="muted">No line items.</p>`;
+  const inventoryById = new Map((inventory || []).map(it => [it.id, it]));
+  const rows = lines.map(l => {
+    const it = l.itemId ? inventoryById.get(l.itemId) : null;
+    const cat = [it?.category, it?.type || l.type].filter(Boolean).join(' · ');
+    return `
+    <tr>
+      <td style="width:2rem;text-align:center"><span class="pull-check"></span></td>
+      <td class="num">${esc(l.qty)}</td>
+      <td><strong>${esc(l.name)}</strong></td>
+      <td>${esc(cat || '—')}</td>
+      <td class="notes-col"></td>
+    </tr>`;
+  }).join('');
+  return `
+    <table>
+      <thead><tr><th style="width:2rem"></th><th class="num">Qty</th><th>Item</th><th>Category</th><th class="notes-col">Notes</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function crewSignatures() {
+  const sig = label => `
+    <div class="crew-sig">
+      <div class="sig-line"></div>
+      <div class="sig-cap">${label} &nbsp;·&nbsp; Date</div>
+    </div>`;
+  return `
+    <div class="crew-sigs">
+      ${sig('Prepared by')}
+      ${sig('Checked by')}
+      ${sig('Returned complete')}
+    </div>`;
 }
 
 function totalsTable(kind, totals, settings) {
@@ -165,8 +208,8 @@ function signatureBlock(project, clientName) {
     </div>`;
 }
 
-// -> full standalone HTML string for kind: 'quote' | 'contract' | 'invoice'
-export function renderDoc(kind, { project, client, settings, payments = [] }) {
+// -> full standalone HTML string for kind: 'quote' | 'contract' | 'invoice' | 'pullsheet'
+export function renderDoc(kind, { project, client, settings, payments = [], inventory = [] }) {
   const totals = projectTotals(project, settings, payments);
   const projPayments = payments
     .filter(p => p.projectId === project.id)
@@ -177,14 +220,21 @@ export function renderDoc(kind, { project, client, settings, payments = [] }) {
     : fmtDate(project.eventDate);
   const time = [project.startTime, project.endTime].filter(Boolean).join(' – ');
 
-  const clientBlock = client ? `
+  const isPull = kind === 'pullsheet';
+
+  const clientBlock = client ? (isPull ? `
+    <div class="block">
+      <h3>Client</h3>
+      <p><strong>${esc(client.name)}</strong></p>
+      ${client.phone ? `<p>${esc(client.phone)}</p>` : ''}
+    </div>` : `
     <div class="block">
       <h3>${kind === 'invoice' ? 'Bill to' : 'Prepared for'}</h3>
       <p><strong>${esc(client.name)}</strong></p>
       ${client.company ? `<p>${esc(client.company)}</p>` : ''}
       ${client.email ? `<p>${esc(client.email)}</p>` : ''}
       ${client.phone ? `<p>${esc(client.phone)}</p>` : ''}
-    </div>` : '';
+    </div>`) : '';
 
   const eventBlock = `
     <div class="block">
@@ -198,6 +248,7 @@ export function renderDoc(kind, { project, client, settings, payments = [] }) {
   let middle = '';
   if (kind === 'contract') middle = contractTerms(settings, totals) + signatureBlock(project, client?.name);
   if (kind === 'invoice') middle = `<h2 style="font-size:1.05rem">Payments</h2>${paymentsTable(projPayments)}`;
+  if (isPull) middle = crewSignatures();
 
   const notes = kind !== 'contract' && project.notes
     ? `<div class="note-box"><strong>Notes:</strong> ${esc(project.notes)}</div>` : '';
@@ -230,9 +281,9 @@ export function renderDoc(kind, { project, client, settings, payments = [] }) {
 
   <div class="blocks">${clientBlock}${eventBlock}</div>
 
-  ${linesTable(project)}
-  ${totalsTable(kind, totals, settings)}
-  ${kind !== 'invoice' && totals.balanceDueDate
+  ${isPull ? pullLinesTable(project, inventory) : linesTable(project)}
+  ${isPull ? '' : totalsTable(kind, totals, settings)}
+  ${!isPull && kind !== 'invoice' && totals.balanceDueDate
     ? `<p class="muted num" style="text-align:right">Balance due by ${esc(fmtDate(totals.balanceDueDate))}</p>` : ''}
   ${notes}
   ${middle}

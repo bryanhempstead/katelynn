@@ -222,7 +222,34 @@ async function renderDetail(el, id) {
         client ? ` · ${client.name}` : ' · No client',
         client?.email ? ` · ${client.email}` : '',
         client?.phone ? ` · ${client.phone}` : '')),
+    h('button', {
+      class: 'btn btn-sm', title: 'Copy this project as a new lead',
+      onClick: duplicateProject,
+    }, '⧉ Duplicate'),
     h('label', { class: 'field' }, 'Status', statusSel)));
+
+  async function duplicateProject() {
+    const projects = await db.all('projects');
+    const copy = {
+      // no id — db.put assigns a fresh one
+      name: `${project.name} (copy)`,
+      clientId: project.clientId,
+      status: 'lead',
+      eventDate: '', endDate: '',          // repeat bookings almost always shift dates
+      startTime: project.startTime || '', endTime: project.endTime || '',
+      venue: project.venue || '',
+      inHouse: !!project.inHouse,
+      lines: (project.lines || []).map(l => ({ ...l })),
+      discountCents: project.discountCents || 0,
+      notes: project.notes || '',
+      quoteNumber: nextQuoteNumber(projects),
+      signature: null,
+      createdAt: new Date().toISOString(),
+    };
+    await db.put('projects', copy);
+    toast('Project duplicated');
+    navigate(`#/projects/${copy.id}`);
+  }
 
   /* ---- event details card ---- */
   const evIn = h('input', { type: 'date', value: project.eventDate || '' });
@@ -529,14 +556,15 @@ async function renderDetail(el, id) {
   }
 
   /* ---- documents card ---- */
-  const docData = { project, client, settings, payments: allPayments };
+  const docData = { project, client, settings, payments: allPayments, inventory };
   el.append(h('div', { class: 'card' },
     h('h2', null, 'Documents'),
     h('p', { class: 'subtitle' }, 'Opens a printable page in a new tab — print to save as PDF.'),
     h('div', { class: 'chip-row', style: 'margin-top:.5rem' },
       h('button', { class: 'btn', onClick: () => openDoc('quote', docData) }, '📄 Quote'),
       h('button', { class: 'btn', onClick: () => openDoc('contract', docData) }, '✍️ Contract'),
-      h('button', { class: 'btn', onClick: () => openDoc('invoice', docData) }, '🧾 Invoice'))));
+      h('button', { class: 'btn', onClick: () => openDoc('invoice', docData) }, '🧾 Invoice'),
+      h('button', { class: 'btn', onClick: () => openDoc('pullsheet', docData) }, '📋 Pull sheet'))));
 
   /* ---- danger zone ---- */
   el.append(h('div', { class: 'card', style: 'border-color:var(--bad)' },

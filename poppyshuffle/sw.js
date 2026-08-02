@@ -10,7 +10,7 @@
  * service worker or caches belonging to other apps in this GitHub Pages repo.
  */
 
-const CACHE_NAME = 'poppyshuffle-v1';
+const CACHE_NAME = 'poppyshuffle-v2';
 
 // App shell, relative to this worker's location (the app may be served from a
 // subpath such as /katelynn/poppyshuffle/).
@@ -24,6 +24,7 @@ const PRECACHE = [
   'js/seed.js',
   'js/availability.js',
   'js/docs.js',
+  'js/ical.js',
   'js/views/dashboard.js',
   'js/views/inventory.js',
   'js/views/projects.js',
