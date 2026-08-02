@@ -1,6 +1,6 @@
-# PoppyShuffle 🌺
+# Poppy Creative — Studio Manager
 
-**Open-source event & rental management** — an alternative to Goodshuffle Pro, built for and seeded with the real-world shape of [The Poppy Creative](https://poppycreates.com) (Mandan, ND): event venue, rental collections, craft classes, and coworking.
+**Open-source event & rental management** — an alternative to Goodshuffle Pro, built for and seeded with the real-world shape of [The Poppy Creative](https://poppycreates.com) (Mandan, ND): event venue, rental collections, craft classes, and coworking. (Engine name: PoppyShuffle.)
 
 No build step, no server, no accounts. One static web app (plain ES modules + IndexedDB) that runs as a website, an installable mobile PWA, and a desktop app.
 
@@ -18,13 +18,16 @@ PoppyShuffle covers the day-to-day of an event venue & rental business: track in
 - **Dashboard** — pipeline by status, upcoming events, money in flight.
 - **Reports & CSV** — revenue and utilization summaries, exportable to CSV.
 - **Website integration** — an embeddable public catalog (`embed/catalog.html`) with a wishlist widget; visitors build a wishlist on your marketing site and it imports into the app as a new quote. See [docs/WEBSITE-INTEGRATION.md](docs/WEBSITE-INTEGRATION.md).
+- **Design Studio** — a full in-app brand editor (Design in the nav): upload your logo (light + dark variants), upload custom font files (.woff2/.ttf/.otf) and assign fonts per role (script headings / serif headings / body), tune base font size, heading scale, letter-spacing, line height, corner radius, and layout density with sliders, and edit the light & dark palettes with a live WCAG contrast checker so every combination stays legible. One-click reset to the Poppy defaults.
+- **Payments & commerce** — set a payment link (Stripe/Square/PayPal) in Settings and invoices render a prominent "Pay online" box. For full online checkout, a self-host [Medusa](https://medusajs.com) scaffold (docker-compose + adapter) ships in `medusa/` — see [docs/MEDUSA.md](docs/MEDUSA.md).
+- **Event-day operations** — pull sheets (price-free packing checklists for crews), one-click project duplication for repeat bookings, and iCal (.ics) export so bookings land in Google/Apple Calendar.
 
 ## The Poppy Creative specifics
 
 Seed data models the real business:
 
-- **Three spaces** — **The Meadow** (event venue, per day), **The Wildflower** (drop-in coworking), **The Grove** (workshop/gathering space).
-- **Collections** — the event rental catalog (seating, tables, backdrops, rugs, decor).
+- **Three spaces** — **The Meadow** (largest light-filled studio, hourly), **The Wildflower** (drop-in coworking, $50/day), **The Grove** (intimate studio with north-facing light, hourly) — with the real 30-minute setup buffer and additional-hour policies in their descriptions.
+- **Collections** — the real category structure from poppycreates.com (couches, accent chairs, tables, backdrops, rugs, decor) with real items like the Mika Table, Lottie Table, clear pedestals, disco balls, and ornate gold mirrors. Prices not published on the site are clearly marked as placeholders.
 - **Craft classes** and **marketing & design services** as bookable service items.
 - **Policies, seeded in Settings** — 50% deposit up front, balance due 30 days before the event, and a 70% in-house rental discount when the event is hosted at the venue. All editable in Settings.
 
