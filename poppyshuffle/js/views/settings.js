@@ -261,13 +261,13 @@ registerView('settings', {
         h('button', {
           class: 'btn btn-sm btn-primary',
           onClick: () => pickFile('.json,application/json', importWishlist),
-        }, '⬆️ Import wishlist')),
+        }, icon('bud', 16), ' Import wishlist')),
       h('p', { class: 'stock-note', style: 'margin-top:.6rem' },
         'When a visitor submits a wishlist, the widget produces a small JSON file (in a hosted deployment it would be sent to you automatically). Use "Import wishlist" to bring that file in — it creates the client (matched by email if they already exist) and a new lead project with their requested items priced from your current inventory.'));
 
     // ---- About ------------------------------------------------------------
     const aboutCard = h('div', { class: 'card' },
-      h('h2', null, '🌸 About PoppyShuffle'),
+      h('h2', null, icon('flower'), ' About PoppyShuffle'),
       h('p', null,
         'PoppyShuffle is an open-source event & rental management platform — an alternative to Goodshuffle Pro — covering inventory, quotes, contracts, invoicing, payments, availability, and reporting for venues and event-rental businesses.'),
       h('p', null,
@@ -277,7 +277,7 @@ registerView('settings', {
     el.append(
       h('div', { class: 'view-head' },
         h('div', { class: 'grow' },
-          h('h1', null, '⚙️ Settings'),
+          h('h1', null, icon('daisy', 22), ' Settings'),
           h('p', { class: 'subtitle' }, 'Business profile, policies, data, and website integration.'))),
       profileCard, policiesCard, dataCard, websiteCard, aboutCard);
   },
