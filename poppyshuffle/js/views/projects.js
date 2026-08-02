@@ -84,7 +84,7 @@ async function renderList(el) {
   function renderChips() {
     chipRow.replaceChildren(
       h('button', { class: `chip${statusFilter === 'all' ? ' active' : ''}`, onClick: () => setFilter('all') }, 'All'),
-      PROJECT_STATUSES.map(s =>
+      ...PROJECT_STATUSES.map(s =>
         h('button', { class: `chip${statusFilter === s ? ' active' : ''}`, onClick: () => setFilter(s) },
           STATUS_META[s].label)));
   }
@@ -334,7 +334,7 @@ async function renderDetail(el, id) {
         ...CATEGORIES.filter(c => match.some(it => it.category === c)),
         ...[...new Set(match.map(it => it.category))].filter(c => !CATEGORIES.includes(c)),
       ];
-      listEl.replaceChildren(cats.map(cat => [
+      listEl.replaceChildren(...cats.flatMap(cat => [
         h('h3', { style: 'margin:.8rem 0 .2rem' }, cat),
         h('div', { class: 'table-scroll' }, h('table', { class: 'data' },
           h('tbody', null, match.filter(it => it.category === cat).map(it =>
