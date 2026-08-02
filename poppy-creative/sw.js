@@ -13,7 +13,7 @@
 const CACHE_NAME = 'poppyshuffle-v3';
 
 // App shell, relative to this worker's location (the app may be served from a
-// subpath such as /katelynn/poppyshuffle/).
+// subpath such as /poppy-creative/).
 const PRECACHE = [
   './',
   'index.html',

@@ -8,7 +8,7 @@ PoppyShuffle ships a public-facing catalog + wishlist widget in `embed/` so a ma
 
 ```html
 <iframe
-  src="https://bryanhempstead.github.io/katelynn/poppyshuffle/embed/catalog.html"
+  src="https://your-site.com/poppy-creative/embed/catalog.html"
   title="The Poppy Creative — rental catalog"
   style="width:100%; min-height:900px; border:0;"
   loading="lazy"></iframe>

@@ -1,6 +1,6 @@
 {
-  "name": "PoppyShuffle — The Poppy Creative",
-  "short_name": "PoppyShuffle",
+  "name": "Poppy Creative — Studio Manager",
+  "short_name": "Poppy Creative",
   "description": "Open-source event & rental management for The Poppy Creative: inventory, real-time availability, quotes, contracts, invoices, CRM, calendar, and reports. Offline-first — all data stays on your device.",
   "start_url": ".",
   "scope": ".",

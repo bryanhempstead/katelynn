@@ -9,7 +9,7 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
-const REPO_URL = 'https://github.com/bryanhempstead/katelynn';
+const REPO_URL = 'https://github.com/poppy-creative/poppyshuffle';
 
 function createWindow() {
   const win = new BrowserWindow({

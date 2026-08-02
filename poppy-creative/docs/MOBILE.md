@@ -6,7 +6,7 @@ PoppyShuffle is a fully responsive, offline-first PWA — install it from the br
 
 **iOS (Safari)**
 
-1. Open the app URL (e.g. `https://bryanhempstead.github.io/katelynn/poppyshuffle/`).
+1. Open the app URL (e.g. `https://your-site.com/poppy-creative/`).
 2. Tap the **Share** button, then **Add to Home Screen**, then **Add**.
 
 **Android (Chrome)**
