@@ -1,6 +1,8 @@
 // App shell: hash router, view registry, DOM + UI helpers.
 import { db } from './db.js';
+import { icon, VIEW_ICONS } from './icons.js';
 export { fmtMoney, fmtDate } from './schema.js';
+export { icon } from './icons.js';
 
 const views = new Map();
 const NAV_ORDER = ['dashboard', 'projects', 'inventory', 'clients', 'calendar', 'reports', 'settings'];
@@ -103,7 +105,8 @@ function buildNav() {
   nav.replaceChildren(...NAV_ORDER.filter(n => views.has(n)).map(n => {
     const v = views.get(n);
     return h('a', { class: 'nav-link', href: `#/${n}`, dataset: { view: n } },
-      h('span', { class: 'nav-icon' }, v.icon || '•'), h('span', { class: 'nav-label' }, v.title));
+      h('span', { class: 'nav-icon' }, VIEW_ICONS[n] ? icon(VIEW_ICONS[n], 20) : (v.icon || '•')),
+      h('span', { class: 'nav-label' }, v.title));
   }));
 }
 

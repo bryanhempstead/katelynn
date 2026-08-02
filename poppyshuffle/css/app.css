@@ -109,6 +109,9 @@ p { margin: .4rem 0; }
 .nav-link:hover { background: var(--surface-2); }
 .nav-link.active { background: var(--poppy); color: #fff; }
 .nav-icon { width: 1.3rem; text-align: center; }
+.bicon { display: inline-flex; vertical-align: -.22em; line-height: 0; }
+.bicon svg { display: block; }
+h1 .bicon, h2 .bicon { margin-right: .35rem; }
 .sidebar-foot { margin-top: auto; padding-top: 1rem; }
 .foot-note { color: var(--muted); font-size: .72rem; padding: .5rem .7rem; }
 
