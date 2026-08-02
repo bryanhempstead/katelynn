@@ -149,6 +149,23 @@ function totalsTable(kind, totals, settings) {
   return `<table class="totals">${out}</table>`;
 }
 
+// "Pay online" box (invoice only) — rendered when Settings → Payments & Commerce
+// has a payment link URL configured. Returns '' otherwise, so documents without
+// a link are byte-for-byte unchanged. Styles are inline for the same reason.
+function payOnlineBox(settings) {
+  const raw = String(settings?.paymentLinkURL || '').trim();
+  if (!raw) return '';
+  // Only ever emit an http(s) href — anything schemeless gets https:// prefixed.
+  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  const instructions = String(settings?.paymentInstructions || '').trim();
+  return `
+  <div style="border:2px solid #DE1E7E;border-radius:12px;background:#fdf2f8;padding:1rem 1.2rem;margin:1.2rem 0">
+    <h2 style="font-size:1.05rem;color:#DE1E7E;margin:0 0 .35rem">Pay online</h2>
+    ${instructions ? `<p style="margin:0 0 .5rem">${esc(instructions)}</p>` : ''}
+    <p style="margin:0"><a href="${esc(href)}" style="color:#DE1E7E;font-weight:700;word-break:break-all">${esc(raw)}</a></p>
+  </div>`;
+}
+
 function paymentsTable(payments) {
   if (!payments.length) return `<p class="muted">No payments recorded yet.</p>`;
   const rows = payments.map(p => `
@@ -284,6 +301,7 @@ export function renderDoc(kind, { project, client, settings, payments = [], inve
 
   ${isPull ? pullLinesTable(project, inventory) : linesTable(project)}
   ${isPull ? '' : totalsTable(kind, totals, settings)}
+  ${kind === 'invoice' ? payOnlineBox(settings) : ''}
   ${!isPull && kind !== 'invoice' && totals.balanceDueDate
     ? `<p class="muted num" style="text-align:right">Balance due by ${esc(fmtDate(totals.balanceDueDate))}</p>` : ''}
   ${notes}

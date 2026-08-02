@@ -12,8 +12,10 @@ export const STATUS_META = {
 
 export const ITEM_TYPES = ['rental', 'space', 'service'];
 
+// Real category structure from poppycreates.com/collections:
+// couches, chairs, backdrops, rugs, tables, decor — plus Spaces & Services.
 export const CATEGORIES = [
-  'Seating', 'Tables', 'Backdrops', 'Rugs', 'Decor', 'Tableware & Linens',
+  'Couches', 'Accent Chairs', 'Tables', 'Backdrops', 'Rugs', 'Decor',
   'Spaces', 'Services',
 ];
 

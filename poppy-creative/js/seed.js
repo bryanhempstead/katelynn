@@ -16,8 +16,8 @@ export function seedData() {
     name: 'The Poppy Creative',
     tagline: 'A vibrant community hub in Mandan, ND — venue, event rentals, craft classes & coworking',
     email: 'hello@poppycreates.com',
-    phone: '(701) 555-0134',
-    address: 'Main Street',
+    phone: '701.214.7969',
+    address: '410 W Main St #408',
     city: 'Mandan',
     region: 'ND',
     depositPct: 50,
@@ -33,56 +33,61 @@ export function seedData() {
     ({ id, name, category, type, priceCents, unit, stockQty, imageEmoji, color, description, tags, active: true, notes: '', updatedAt: now() });
 
   const inventory = [
-    // Spaces
+    // Spaces — real descriptions from poppycreates.com/our-spaces (hourly; base
+    // rates aren't published in search indexes, so those are placeholders).
     inv('sp-meadow', 'The Meadow', 'Spaces', 'space', 7500, 'per hour', 1, '🌾', '#E8B44F',
-      'Our largest light-filled studio — crisp white walls, chic white-brick accent, warm wood flooring, and tons of natural light. Ideal for events, photoshoots, and workshops. Available for hourly rental. (placeholder rate)', ['studio', 'events', 'photo']),
+      'Our largest light-filled studio — crisp white walls with a chic white-brick accent, warm wood flooring, and abundant natural light. Ideal for events, photoshoots, workshops, and creative gatherings. Every reservation includes a complimentary 30-minute buffer before and after for setup; each additional weekday studio hour is $50. (base rate placeholder)', ['studio', 'events', 'photo']),
     inv('sp-wildflower', 'The Wildflower', 'Spaces', 'space', 5000, 'per day', 6, '🌼', '#8BA888',
-      'Bright coworking space — drop in for the day with wifi, coffee, and good company. $50/day.', ['coworking']),
+      'Inviting coworking and meeting space with cozy, historic charm — Wi-Fi, all the coffee you need, beverage fridge, vending machine, and a conference room with TV (HDMI screen-sharing + Firestick). Perfect for remote work, meetings, lifestyle shoots, or intimate gatherings. $50 a day.', ['coworking', 'meetings']),
     inv('sp-grove', 'The Grove', 'Spaces', 'space', 6500, 'per hour', 1, '🌳', '#4E6B51',
-      'Cozy mid-size gathering room, perfect for meetings, workshops, and intimate parties. Available for hourly rental. (placeholder rate)', ['meetings', 'workshops']),
-    // Seating
-    inv('it-velvet-sofa', 'Blush Velvet Sofa', 'Seating', 'rental', 12500, 'per event', 2, '🛋️', '#E4938B',
-      'Statement blush velvet sofa — the insta-worthy centerpiece of any lounge setup.', ['lounge', 'vintage']),
-    inv('it-rattan-chairs', 'Rattan Peacock Chair', 'Seating', 'rental', 6500, 'per event', 4, '🪑', '#C99A5B',
-      'Vintage rattan peacock chair for sweetheart tables and photo moments.', ['boho', 'photo']),
-    inv('it-folding-chairs', 'White Folding Chairs (set of 10)', 'Seating', 'rental', 3500, 'per event', 12, '💺', '#D9D4C7',
-      'Clean white folding chairs, sold in sets of ten. Setup included for in-house events.', ['ceremony']),
-    // Tables
+      'Chic, intimate studio for smaller gatherings, photoshoots, and creative projects — white walls with a stylish white-brick accent, rich dark wood floors, and large north-facing windows with soft, steady natural light. Transforms into a cozy event venue, photo studio, or workshop spot. Includes the complimentary 30-minute setup buffer. (base rate placeholder)', ['meetings', 'workshops', 'photo']),
+    // Couches — poppycreates.com/collections/couches
+    inv('it-velvet-sofa', 'Blush Velvet Sofa', 'Couches', 'rental', 12500, 'per event', 2, '🛋️', '#E4938B',
+      'Statement blush velvet sofa — chic design and cozy comfort that elevates events, photoshoots, and gatherings. (demo item — replace with your pieces)', ['lounge', 'vintage']),
+    // Accent Chairs — poppycreates.com/collections/accent-chairs
+    inv('it-rattan-chairs', 'Rattan Peacock Chair', 'Accent Chairs', 'rental', 6500, 'per event', 4, '🪑', '#C99A5B',
+      'Vintage rattan peacock chair — character and comfort for sweetheart tables and photo moments. (demo item)', ['boho', 'photo']),
+    inv('it-folding-chairs', 'White Folding Chairs (set of 10)', 'Accent Chairs', 'rental', 3500, 'per event', 12, '💺', '#D9D4C7',
+      'Clean white folding chairs, sold in sets of ten. Setup included for in-house events. (demo item)', ['ceremony']),
+    // Tables — real items from the site
+    inv('it-mika-table', 'Mika Table', 'Tables', 'rental', 2000, 'per event', 1, '🪑', '#5C5C54',
+      'The Mika Accent Table features a sleek, dark wood top paired with a white pedestal base for a refined, modern look. Its compact size makes it an excellent choice for showcasing floral arrangements, candles, or small decorative elements. (price placeholder — not published)', ['accent', 'modern']),
+    inv('it-lottie-table', 'Lottie Table', 'Tables', 'rental', 1500, 'per event', 1, '✨', '#E9C9CF',
+      'A small girl that makes a big statement — she is dainty, she is shimmery. $15.00 per rental.', ['accent', 'shimmer']),
     inv('it-farm-table', 'Farmhouse Table (8 ft)', 'Tables', 'rental', 8500, 'per event', 6, '🪵', '#A9805B',
-      'Warm wood farmhouse table seating 8–10.', ['reception']),
+      'Warm wood farmhouse table seating 8–10. (demo item)', ['reception']),
     inv('it-cocktail-table', 'Cocktail Table with Linen', 'Tables', 'rental', 3000, 'per event', 8, '🍸', '#DDE3D5',
-      'High-top cocktail table with your choice of linen.', ['cocktail hour']),
-    inv('it-dessert-cart', 'Vintage Dessert Cart', 'Tables', 'rental', 5500, 'per event', 1, '🧁', '#E9C9CF',
-      'Rolling vintage cart for desserts, favors, or a champagne station.', ['dessert', 'vintage']),
+      'High-top cocktail table with your choice of linen. (demo item)', ['cocktail hour']),
     // Backdrops
     inv('it-arch-backdrop', 'Sage Arch Backdrop Wall', 'Backdrops', 'rental', 9500, 'per event', 2, '🏛️', '#8BA888',
-      'Freestanding sage arch wall — flowers and signage attach easily.', ['photo', 'ceremony']),
+      'Freestanding sage arch wall — flowers and signage attach easily. Perfect for turning any space into an insta-worthy backdrop. (demo item)', ['photo', 'ceremony']),
     inv('it-shimmer-wall', 'Champagne Shimmer Wall', 'Backdrops', 'rental', 11000, 'per event', 1, '✨', '#E8B44F',
-      'Champagne sequin shimmer wall, 7×7 ft — pure sparkle in photos.', ['photo', 'party']),
+      'Champagne sequin shimmer wall, 7×7 ft — pure sparkle in photos. (demo item)', ['photo', 'party']),
     inv('it-balloon-garland', 'Balloon Garland (10 ft, custom colors)', 'Backdrops', 'rental', 15000, 'per event', 4, '🎈', '#DE1E7E',
-      'Custom-color balloon garland installed on any backdrop or wall.', ['balloon', 'party']),
+      'Custom-color balloon garland installed on any backdrop or wall. (demo item)', ['balloon', 'party']),
     // Rugs
     inv('it-persian-rug', 'Vintage Persian-Style Rug', 'Rugs', 'rental', 4500, 'per event', 5, '🧶', '#B0563B',
-      'Layered vintage-style rugs to warm up ceremonies and lounges.', ['boho', 'lounge']),
-    // Decor
+      'Layered vintage-style rugs to warm up ceremonies and lounges. (demo item)', ['boho', 'lounge']),
+    // Decor — real items: mirrors, disco balls, clear pedestals
+    inv('it-gold-mirror', 'Ornate Gold Mirror', 'Decor', 'rental', 4000, 'per event', 3, '🪞', '#C9A227',
+      'Vintage-inspired mirror with ornate gold accents and a rich, gilded finish exuding timeless charm — a stunning focal point that enhances light and adds glamour. (price placeholder — not published)', ['mirrors', 'vintage']),
+    inv('it-disco-6', 'Disco Ball — 6" (Disco Dynamo)', 'Decor', 'rental', 1000, 'per event', 4, '🪩', '#B8C0C8',
+      'Pocket-sized 6-inch disco ball that turns every space into a disco wonderland. (price placeholder — not published)', ['disco', 'party']),
+    inv('it-disco-12', 'Disco Ball — 12"', 'Decor', 'rental', 2500, 'per event', 2, '🪩', '#8FA0B0',
+      'Statement 12-inch disco ball — instant sparkle and retro glam for dance floors, photo ops, and dazzling light across the venue. (price placeholder — not published)', ['disco', 'party']),
+    inv('it-clear-pedestals', 'Clear Pedestals (set)', 'Decor', 'rental', 4500, 'per event', 2, '🏛️', '#DDE3D5',
+      'Clear cylinder pedestals with built-in hooks inside to showcase decorations — fairy lights twinkling within or cascading floral arrangements suspended. Can be wrapped in spandex to match any theme. (price placeholder — not published)', ['pedestals', 'display']),
     inv('it-neon-sign', 'Neon Sign — "let’s party"', 'Decor', 'rental', 5000, 'per event', 1, '💡', '#DE1E7E',
-      'Warm-white neon sign, hangs on any backdrop.', ['photo', 'party']),
-    inv('it-taper-candles', 'Taper Candle + Bud Vase Set (10 tables)', 'Decor', 'rental', 6000, 'per event', 3, '🕯️', '#E8B44F',
-      'Amber bud vases, taper candles, and holders styled per table.', ['tablescape']),
-    inv('it-easel', 'Gold Easel + Welcome Sign', 'Decor', 'rental', 2500, 'per event', 3, '🖼️', '#C9A227',
-      'Gold easel with acrylic welcome sign — custom lettering available.', ['signage']),
-    // Tableware & Linens
-    inv('it-linen-set', 'Table Linens (each, assorted colors)', 'Tableware & Linens', 'rental', 1200, 'per event', 40, '🧵', '#DDE3D5',
-      'Floor-length linens in our house palette.', ['tablescape']),
-    inv('it-glassware', 'Amber Goblet Glassware (set of 10)', 'Tableware & Linens', 'rental', 2000, 'per event', 10, '🥂', '#C9772B',
-      'Amber glass goblets that glow in candlelight.', ['tablescape']),
-    // Services
-    inv('sv-craft-class', 'Private Craft Class (up to 12)', 'Services', 'service', 30000, 'per session', 2, '🎨', '#8BA888',
-      'A tailored hands-on craft class hosted by Poppy — materials included.', ['classes', 'experiences']),
+      'Warm-white neon sign, hangs on any backdrop. (demo item)', ['photo', 'party']),
+    inv('it-linen-set', 'Table Linens (each, assorted colors)', 'Decor', 'rental', 1200, 'per event', 40, '🧵', '#DDE3D5',
+      'Floor-length linens in our house palette. Tablecloths are provided and set up for in-house events. (demo item)', ['tablescape']),
+    // Services — Tailored Experiences & studio services from the site
+    inv('sv-craft-class', 'Craft Class — Tailored Experience', 'Services', 'service', 30000, 'per session', 2, '🎨', '#8BA888',
+      'Tailored Experiences are all about creating custom magic just for you — custom backdrops, centerpieces, and hands-on craft classes hosted by Poppy. (price placeholder)', ['classes', 'experiences']),
+    inv('sv-party-package', 'Custom Party Package', 'Services', 'service', 25000, 'per event', 3, '🎉', '#DE1E7E',
+      'Fully customizable party package — we provide all tables, chairs, and tablecloths, set everything up in your preferred layout before you arrive, and handle the cleanup after. All you bring is yourself, your friends, and any extra decor. (price placeholder)', ['party', 'full-service']),
     inv('sv-design', 'Marketing & Design Package', 'Services', 'service', 20000, 'per session', 3, '🖌️', '#4E6B51',
-      'Branding, print, and social design services from the Poppy studio. (placeholder rate)', ['design']),
-    inv('sv-setup', 'Delivery, Setup & Teardown', 'Services', 'service', 7500, 'per event', 5, '🚚', '#233329',
-      'We deliver, set up in your preferred layout, and handle cleanup after.', ['logistics']),
+      'Branding, print, and social design services from the Poppy studio. (price placeholder)', ['design']),
   ];
 
   const clients = [
@@ -129,7 +134,7 @@ export function seedData() {
         { itemId: 'it-arch-backdrop', name: 'Sage Arch Backdrop Wall', qty: 1, priceCents: 9500, type: 'rental' },
         { itemId: 'it-farm-table', name: 'Farmhouse Table (8 ft)', qty: 6, priceCents: 8500, type: 'rental' },
         { itemId: 'it-linen-set', name: 'Table Linens (each, assorted colors)', qty: 12, priceCents: 1200, type: 'rental' },
-        { itemId: 'sv-setup', name: 'Delivery, Setup & Teardown', qty: 1, priceCents: 7500, type: 'service' },
+        { itemId: 'sv-party-package', name: 'Custom Party Package', qty: 1, priceCents: 25000, type: 'service' },
       ],
       discountCents: 0, notes: 'Two-day rental (setup Friday). Waiting on final guest count.',
       quoteNumber: 'PS-1003', signature: null,

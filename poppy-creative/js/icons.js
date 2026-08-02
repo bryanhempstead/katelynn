@@ -191,6 +191,7 @@ export const VIEW_ICONS = {
   clients: 'blooms',
   calendar: 'calendarFlower',
   reports: 'vineUp',
+  design: 'bud',
   settings: 'daisy',
   catalog: 'vine',
 };

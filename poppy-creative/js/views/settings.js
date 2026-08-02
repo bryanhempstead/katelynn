@@ -265,6 +265,53 @@ registerView('settings', {
       h('p', { class: 'stock-note', style: 'margin-top:.6rem' },
         'When a visitor submits a wishlist, the widget produces a small JSON file (in a hosted deployment it would be sent to you automatically). Use "Import wishlist" to bring that file in — it creates the client (matched by email if they already exist) and a new lead project with their requested items priced from your current inventory.'));
 
+    // ---- Payments & Commerce ----------------------------------------------
+    const pay = {};
+    const payField = (label, key, attrs, help) => h('label', { class: 'field' },
+      label,
+      pay[key] = h('input', { value: company[key] ?? '', ...attrs }),
+      h('span', { class: 'stock-note' }, help));
+
+    const paymentsCard = h('div', { class: 'card' },
+      h('h2', null, icon('stems'), ' Payments & Commerce'),
+      h('p', { class: 'subtitle' },
+        'Get paid online. A payment link works today with zero hosting; the optional Medusa fields connect a full self-hosted storefront.'),
+      h('div', { class: 'form-grid' },
+        payField('Payment link URL', 'paymentLinkURL',
+          { type: 'url', placeholder: 'https://buy.stripe.com/…' },
+          'A payment link from Stripe, Square, or PayPal. When set, every invoice shows a prominent "Pay online" box with this link.'),
+        h('label', { class: 'field' },
+          'Payment instructions',
+          pay.paymentInstructions = h('textarea', {
+            rows: '3',
+            placeholder: 'Pay online at the link below, or by check to The Poppy Creative…',
+            value: company.paymentInstructions ?? '',
+          }),
+          h('span', { class: 'stock-note' },
+            'Optional. Printed on invoices above the payment link — mention checks, cash, or transfer details here.')),
+        payField('Medusa URL (optional)', 'medusaURL',
+          { type: 'url', placeholder: 'https://shop.poppycreates.com' },
+          'Base URL of a self-hosted Medusa server. Together with the publishable key, this activates the storefront adapter — see docs/MEDUSA.md.'),
+        payField('Medusa publishable API key (optional)', 'medusaPublishableKey',
+          { placeholder: 'pk_…' },
+          'Publishable API key from the Medusa admin (Settings → Publishable API Keys). Safe to store here — it only grants read access to the public store API.')),
+      h('p', null,
+        h('button', {
+          class: 'btn btn-primary',
+          onClick: async () => {
+            const latest = (await db.get('settings', 'company')) || { id: 'company' };
+            await db.put('settings', {
+              ...latest,
+              id: 'company',
+              paymentLinkURL: pay.paymentLinkURL.value.trim(),
+              paymentInstructions: pay.paymentInstructions.value.trim(),
+              medusaURL: pay.medusaURL.value.trim().replace(/\/+$/, ''),
+              medusaPublishableKey: pay.medusaPublishableKey.value.trim(),
+            });
+            toast('Payment settings saved');
+          },
+        }, 'Save payment settings')));
+
     // ---- About ------------------------------------------------------------
     const aboutCard = h('div', { class: 'card' },
       h('h2', null, icon('flower'), ' About PoppyShuffle'),
@@ -278,7 +325,7 @@ registerView('settings', {
       h('div', { class: 'view-head' },
         h('div', { class: 'grow' },
           h('h1', null, icon('daisy', 22), ' Settings'),
-          h('p', { class: 'subtitle' }, 'Business profile, policies, data, and website integration.'))),
-      profileCard, policiesCard, dataCard, websiteCard, aboutCard);
+          h('p', { class: 'subtitle' }, 'Business profile, policies, data, website integration, and payments.'))),
+      profileCard, policiesCard, dataCard, websiteCard, paymentsCard, aboutCard);
   },
 });

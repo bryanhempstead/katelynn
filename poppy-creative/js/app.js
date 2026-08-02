@@ -4,8 +4,10 @@ import { icon, VIEW_ICONS } from './icons.js';
 export { fmtMoney, fmtDate } from './schema.js';
 export { icon } from './icons.js';
 
+import { applyDesign } from './design.js';
+
 const views = new Map();
-const NAV_ORDER = ['dashboard', 'projects', 'inventory', 'clients', 'calendar', 'reports', 'settings'];
+const NAV_ORDER = ['dashboard', 'projects', 'inventory', 'clients', 'calendar', 'reports', 'design', 'settings'];
 
 export function registerView(name, view) { views.set(name, view); }
 
@@ -114,7 +116,13 @@ export async function startApp() {
   await db.ready;
   buildNav();
   const settings = await db.get('settings', 'company');
-  document.getElementById('brand-name').textContent = settings?.name || 'PoppyShuffle';
+  document.getElementById('brand-name').textContent = settings?.name || 'Poppy Creative';
+  try { await applyDesign(await db.get('settings', 'design')); } catch (e) { console.warn('design apply failed', e); }
+  db.onChange(async store => {
+    if (store === 'settings') {
+      try { await applyDesign(await db.get('settings', 'design')); } catch {}
+    }
+  });
 
   document.getElementById('theme-toggle').addEventListener('click', () => {
     const root = document.documentElement;
