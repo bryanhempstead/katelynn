@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PoppyShuffle — The Poppy Creative</title>
+<meta name="description" content="PoppyShuffle: open-source event & rental management for The Poppy Creative — inventory, quotes, contracts, invoices, calendar, and website integration.">
+<meta name="theme-color" content="#E4593B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="splash"><div class="splash-mark">🌺</div><div class="splash-word">PoppyShuffle</div></div>
+
+<header class="topbar">
+  <button id="menu-toggle" class="icon-btn" aria-label="Menu">☰</button>
+  <a class="brand" href="#/dashboard">
+    <span class="brand-mark">🌺</span>
+    <span class="brand-text"><strong id="brand-name">The Poppy Creative</strong><small>PoppyShuffle</small></span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <button id="theme-toggle" class="icon-btn" aria-label="Toggle dark mode">◐</button>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="Main">
+    <div id="nav-links"></div>
+    <div class="sidebar-foot">
+      <a href="embed/catalog.html" target="_blank" rel="noopener" class="nav-link nav-ext">
+        <span class="nav-icon">🌐</span><span class="nav-label">Public catalog</span></a>
+      <p class="foot-note">Open-source · offline-first<br>Works as web, desktop &amp; mobile app</p>
+    </div>
+  </nav>
+  <div class="scrim" onclick="document.body.classList.remove('nav-open')"></div>
+  <main id="view" class="main" tabindex="-1"></main>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script type="module">
+  import { startApp } from './js/app.js';
+  import './js/views/dashboard.js';
+  import './js/views/inventory.js';
+  import './js/views/projects.js';
+  import './js/views/clients.js';
+  import './js/views/calendar.js';
+  import './js/views/reports.js';
+  import './js/views/settings.js';
+  startApp();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
