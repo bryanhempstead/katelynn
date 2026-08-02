@@ -2,6 +2,7 @@
 // Owner: Agent C. Builds standalone HTML strings opened in a new window.
 // IMPORTANT: imports schema.js ONLY (never app.js — avoids circular deps).
 import { fmtMoney, fmtDate, todayISO, projectTotals } from './schema.js';
+import { flourishMarkup } from './icons.js';
 
 // Escape every user-provided string interpolated into the HTML.
 function esc(v) {
@@ -67,7 +68,7 @@ function docStyles() {
     .print-btn { position: fixed; right: 1.2rem; bottom: 1.2rem; background: #DE1E7E; color: #fff;
       border: none; border-radius: 99px; padding: .7rem 1.3rem; font: inherit; font-weight: 700;
       cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
-    .print-btn:hover { background: #B0402A; }
+    .print-btn:hover { background: #B01562; }
     @media print { .print-btn { display: none; } body { padding: 0; } }
   `;
 }
@@ -264,7 +265,7 @@ export function renderDoc(kind, { project, client, settings, payments = [], inve
 <body>
   <div class="doc-head">
     <div>
-      <div class="biz-name">🌺 ${esc(settings?.name || 'PoppyShuffle')}</div>
+      <div class="biz-name">${esc(settings?.name || 'PoppyShuffle')}</div>
       <div class="biz-sub">${esc(settings?.tagline || '')}</div>
       <div class="biz-contact">
         ${esc([settings?.address, [settings?.city, settings?.region].filter(Boolean).join(', ')].filter(Boolean).join(' · '))}<br>
@@ -289,9 +290,10 @@ export function renderDoc(kind, { project, client, settings, payments = [], inve
   ${middle}
 
   <div class="doc-foot">
+    <div style="margin-bottom:.4rem">${flourishMarkup('divider', { width: 200, stroke: '#8F8F86', strokeWidth: 2 })}</div>
     ${esc(settings?.name || 'PoppyShuffle')} — thank you for celebrating with us.
   </div>
-  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
 </body>
 </html>`;
 }

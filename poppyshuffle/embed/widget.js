@@ -9,6 +9,7 @@
 //     items:[{itemId, name, qty}] }
 import { db } from '../js/db.js';
 import { fmtMoney, CATEGORIES } from '../js/schema.js';
+import { icon } from '../js/icons.js';
 
 const LS_KEY = 'ps-wishlist';
 
@@ -62,9 +63,12 @@ const countEl = document.getElementById('wish-count');
 function renderBar() {
   const count = wishlist.reduce((s, w) => s + w.qty, 0);
   bar.classList.toggle('show', count > 0);
-  countEl.textContent = count > 0
-    ? `🧺 ${count} item${count === 1 ? '' : 's'} in your wishlist`
-    : '';
+  if (count > 0) {
+    countEl.replaceChildren(icon('blooms', 18),
+      ` ${count} item${count === 1 ? '' : 's'} in your wishlist`);
+  } else {
+    countEl.replaceChildren();
+  }
 }
 
 // ---- quote request sheet ---------------------------------------------------
@@ -135,7 +139,7 @@ function buildForm() {
       sheetBody.replaceChildren(buildThanks(client.name));
     },
   },
-    el('h2', { id: 'sheet-title' }, 'Request a quote 🌸'),
+    el('h2', { id: 'sheet-title' }, 'Request a quote ', icon('flower', 18)),
     el('p', { class: 'sub' }, 'Tell us a little about you and your date — we’ll put together a custom quote for your wishlist.'),
     buildWishRows(),
     el('div', { class: 'fgrid' },
@@ -151,7 +155,7 @@ function buildForm() {
 
 function buildThanks(firstName) {
   return el('div', { class: 'thanks' },
-    el('div', { class: 'big' }, '💌'),
+    el('div', { class: 'big' }, icon('bud', 44)),
     el('h2', { id: 'sheet-title' }, `Thank you${firstName ? ', ' + firstName.split(' ')[0] : ''}!`),
     el('p', { class: 'sub' },
       'Your wishlist has been saved as a small file on your device — attach it in an email to hello@poppycreates.com and the Poppy team will follow up within one business day with a custom quote. (On the live site this is sent to us automatically.)'),
@@ -191,7 +195,7 @@ async function renderCatalog() {
     const items = (await db.all('inventory')).filter(i => i.active);
     if (!items.length) {
       main.replaceChildren(el('p', { class: 'status-note' },
-        'Our catalog is being restocked — check back soon! 🌷'));
+        'Our catalog is being restocked — check back soon! ', icon('tulip', 18)));
       return;
     }
     const byCategory = new Map();
